@@ -39,6 +39,9 @@ type RouterConfig struct {
 	// Logger, when set, is used for bridge request/response logging.
 	Logger domain.ActionLogger
 
+	// HITLManager, when set, enables HITL intervention endpoints.
+	HITLManager domain.HITLManager
+
 	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
 	Auth AuthConfig
 
@@ -104,6 +107,12 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 		if cfg.MetricsCollector != nil {
 			mh := NewMetricsHandler(cfg.MetricsCollector)
 			r.Get("/metrics", mh.GetMetrics)
+		}
+
+		if cfg.HITLManager != nil {
+			hh := NewHITLHandlers(cfg.HITLManager)
+			r.Post("/hitl/{id}/resolve", hh.Resolve)
+			r.Delete("/hitl/{id}", hh.Cancel)
 		}
 
 		RegisterBridgeRoutes(r, BridgeConfig{

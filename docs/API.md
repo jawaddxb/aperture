@@ -165,6 +165,26 @@ Execute a single browser action (lower-level than bridge/execute).
 
 ---
 
+### Human-in-the-Loop (HITL)
+
+When a task encounters a CAPTCHA or needs human input, it creates an intervention that blocks until resolved.
+
+#### `POST /api/v1/hitl/{id}/resolve`
+Resolve a pending intervention.
+
+**Request:**
+```json
+{
+  "success": true,
+  "data": "captcha-solution-text"
+}
+```
+
+#### `DELETE /api/v1/hitl/{id}`
+Cancel a pending intervention.
+
+---
+
 ### Metrics
 
 #### `GET /api/v1/metrics`
@@ -187,6 +207,8 @@ The LLM planner decomposes goals into these actions:
 | `hover` | `target:string` | Hover over an element |
 | `wait` | `strategy:string, value:string` | Wait for condition (selector/text/hidden/timeout/networkidle) |
 | `extract` | `schema:string, format:string` | Extract structured data via LLM |
+| `upload` | `target:string, path:string` | Upload a file to a file input |
+| `pause` | `reason:string` | Pause for human intervention (CAPTCHA) |
 
 ---
 

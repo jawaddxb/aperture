@@ -27,6 +27,8 @@ Available actions and their required params:
               "hidden" (selector disappears), "timeout" (ms), "networkidle"
   extract     schema:string (describe what to extract), format:"json"|"markdown"
               optional: selector:string (scope to sub-tree)
+  upload      target:string (file input selector), path:string (local file path)
+  pause       reason:string (pause for human intervention, e.g. CAPTCHA)
 
 Response format:
   A JSON array of step objects. Each step:
