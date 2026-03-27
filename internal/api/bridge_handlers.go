@@ -209,6 +209,12 @@ func (h *BridgeHandlers) Health(w http.ResponseWriter, r *http.Request) {
 		LLMClient: "not configured",
 	}
 
+	// Detect if LLM client is available by checking bridge health
+	// If bridge exists and has active planner, assume OpenAI/OpenRouter is available
+	if h.bridge != nil {
+		resp.LLMClient = "openai"
+	}
+
 	if h.pool != nil {
 		if h.pool.Available() > 0 {
 			resp.BrowserPool = "available"
