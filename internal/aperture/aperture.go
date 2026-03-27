@@ -48,6 +48,7 @@ type Aperture struct {
 	Bridge    domain.Bridge
 	Logger    domain.ActionLogger
 	Metrics   domain.MetricsCollector
+	HITL      domain.HITLManager
 	Router    http.Handler
 
 	server *http.Server
@@ -59,6 +60,7 @@ type Aperture struct {
 func New(cfg *config.Config) (*Aperture, error) {
 	logger := buildLogger()
 	metrics := observe.NewInMemoryMetrics()
+	hitl := executor.NewDefaultHITLManager()
 
 	pool, err := buildPool(cfg)
 	if err != nil {
@@ -66,7 +68,7 @@ func New(cfg *config.Config) (*Aperture, error) {
 	}
 
 	p := buildPlanner(cfg, logger)
-	seq := buildSequencer(metrics)
+	seq := buildSequencer(metrics, p, hitl)
 	mgr := buildSessionManager(pool, p, seq)
 	br := buildBridge(mgr, cfg)
 	router := buildRouter(cfg, mgr, br, pool, logger, metrics)
@@ -79,6 +81,7 @@ func New(cfg *config.Config) (*Aperture, error) {
 		Bridge:    br,
 		Logger:    logger,
 		Metrics:   metrics,
+		HITL:      hitl,
 		Router:    router,
 	}, nil
 }
@@ -150,6 +153,7 @@ func buildPool(cfg *config.Config) (domain.BrowserPool, error) {
 		PoolSize:     cfg.Browser.PoolSize,
 		ChromiumPath: cfg.Browser.ChromiumPath,
 		SkipPreWarm:  cfg.Browser.SkipPreWarm,
+		ProxyURL:     cfg.Browser.ProxyURL,
 	})
 }
 
@@ -176,9 +180,16 @@ func buildPlanner(cfg *config.Config, _ domain.ActionLogger) domain.Planner {
 }
 
 // buildSequencer wires executors, recovery, and metrics into a DefaultSequencer.
-func buildSequencer(metrics domain.MetricsCollector) domain.Sequencer {
+func buildSequencer(metrics domain.MetricsCollector, p domain.Planner, hitl domain.HITLManager) domain.Sequencer {
 	res := resolver.NewUnifiedResolver()
-	registry := buildExecutorRegistry(res)
+
+	// Extract LLMClient from planner if possible for ExtractExecutor.
+	var llmClient domain.LLMClient
+	if lp, ok := p.(interface{ Client() domain.LLMClient }); ok {
+		llmClient = lp.Client()
+	}
+
+	registry := buildExecutorRegistry(res, llmClient, hitl)
 	rec := recovery.NewDefaultRecovery()
 
 	return sequencer.NewDefaultSequencer(sequencer.Config{
@@ -192,15 +203,22 @@ func buildSequencer(metrics domain.MetricsCollector) domain.Sequencer {
 }
 
 // buildExecutorRegistry maps action names to their executors.
-func buildExecutorRegistry(res domain.UnifiedResolver) map[string]domain.Executor {
-	return map[string]domain.Executor{
+func buildExecutorRegistry(res domain.UnifiedResolver, llm domain.LLMClient, hitl domain.HITLManager) map[string]domain.Executor {
+	registry := map[string]domain.Executor{
 		"navigate":   executor.NewNavigateExecutor(),
 		"click":      executor.NewClickExecutor(res),
 		"type":       executor.NewTypeExecutor(res),
 		"screenshot": executor.NewScreenshotExecutor(),
 		"scroll":     executor.NewScrollExecutor(),
 		"wait":       executor.NewWaitExecutor(),
+		"pause":      executor.NewPauseExecutor(hitl),
 	}
+
+	if llm != nil {
+		registry["extract"] = executor.NewExtractExecutor(llm)
+	}
+
+	return registry
 }
 
 // buildSessionManager wires pool, planner, and sequencer into a session manager.

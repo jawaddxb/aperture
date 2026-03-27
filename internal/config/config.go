@@ -25,6 +25,8 @@ type BrowserConfig struct {
 	// Zero value (false) = pre-warm in production; set to true in tests
 	// to avoid requiring a real Chromium binary.
 	SkipPreWarm bool `mapstructure:"skip_pre_warm"`
+	// ProxyURL is an optional static proxy server address.
+	ProxyURL string `mapstructure:"proxy_url"`
 }
 
 // RedisConfig holds Redis connection settings.

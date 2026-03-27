@@ -3,22 +3,28 @@ package browser
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/chromedp"
 )
 
 // instance implements domain.BrowserInstance.
 // Each instance owns exactly one Chromium tab (one chromedp context chain).
 type instance struct {
-	id         string
-	createdAt  time.Time
-	allocCtx   context.Context // allocator-level context (owns the OS process)
+	id          string
+	createdAt   time.Time
+	allocCtx    context.Context // allocator-level context (owns the OS process)
 	allocCancel context.CancelFunc
-	tabCtx     context.Context // tab-level context (single tab)
-	tabCancel  context.CancelFunc
-	closed     atomic.Bool
+	tabCtx      context.Context // tab-level context (single tab)
+	tabCancel   context.CancelFunc
+	closed      atomic.Bool
+
+	proxyMu   sync.Mutex
+	proxyUser string
+	proxyPass string
 }
 
 // newInstance launches a single Chromium process and opens one tab.
@@ -95,4 +101,40 @@ func (i *instance) reset() error {
 	i.tabCtx = tabCtx
 	i.tabCancel = tabCancel
 	return nil
+}
+
+// setProxyAuth configures proxy credentials for this instance.
+func (i *instance) setProxyAuth(user, pass string) {
+	i.proxyMu.Lock()
+	i.proxyUser = user
+	i.proxyPass = pass
+	i.proxyMu.Unlock()
+
+	// Enable Fetch.enable to intercept authentication requests.
+	chromedp.ListenTarget(i.tabCtx, func(ev interface{}) {
+		switch e := ev.(type) {
+		case *fetch.EventAuthRequired:
+			go func() {
+				i.proxyMu.Lock()
+				user := i.proxyUser
+				pass := i.proxyPass
+				i.proxyMu.Unlock()
+
+				if user == "" && pass == "" {
+					_ = chromedp.Run(i.tabCtx, fetch.ContinueWithAuth(e.RequestID, &fetch.AuthChallengeResponse{
+						Response: fetch.AuthChallengeResponseResponseDefault,
+					}))
+					return
+				}
+
+				_ = chromedp.Run(i.tabCtx, fetch.ContinueWithAuth(e.RequestID, &fetch.AuthChallengeResponse{
+					Response: fetch.AuthChallengeResponseResponseProvideCredentials,
+					Username: user,
+					Password: pass,
+				}))
+			}()
+		}
+	})
+
+	_ = chromedp.Run(i.tabCtx, fetch.Enable().WithHandleAuthRequests(true))
 }

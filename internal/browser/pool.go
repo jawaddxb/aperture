@@ -44,6 +44,11 @@ type Config struct {
 	// Zero value (false) means pre-warm on startup — production default.
 	// Set to true in tests to avoid requiring a real Chromium binary.
 	SkipPreWarm bool
+	// ProxyURL is an optional static proxy server address, e.g. "http://proxy.example.com:8080".
+	ProxyURL string
+	// ProxyProvider is an optional provider to resolve a proxy per session.
+	// If both ProxyURL and ProxyProvider are set, ProxyURL is used as a fallback.
+	ProxyProvider domain.ProxyProvider
 }
 
 // NewPool creates and pre-warms a Pool with cfg.PoolSize Chromium instances.
@@ -90,6 +95,15 @@ func (p *Pool) Acquire(ctx context.Context) (domain.BrowserInstance, error) {
 	start := time.Now()
 	select {
 	case inst := <-p.available:
+		// Configure proxy for this instance if provider is set.
+		if p.cfg.ProxyProvider != nil {
+			// sessionID is not currently passed to Acquire, using "default".
+			// In a future phase, Acquire might take sessionID.
+			if err := p.configureProxy(ctx, inst, "default"); err != nil {
+				p.Release(inst)
+				return nil, err
+			}
+		}
 		return inst, nil
 	case <-tctx.Done():
 		return nil, &domain.ErrPoolExhausted{
@@ -97,6 +111,27 @@ func (p *Pool) Acquire(ctx context.Context) (domain.BrowserInstance, error) {
 			Waited:   time.Since(start),
 		}
 	}
+}
+
+// configureProxy resolves and applies proxy settings to an instance.
+func (p *Pool) configureProxy(ctx context.Context, inst domain.BrowserInstance, sessionID string) error {
+	proxy, err := p.cfg.ProxyProvider.GetProxy(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("proxy provider: %w", err)
+	}
+	if proxy == nil {
+		return nil
+	}
+
+	// For authenticated proxies, we need to handle CDP events.
+	if proxy.Username != "" || proxy.Password != "" {
+		// This requires updating the instance to handle authentication.
+		if conc, ok := inst.(*instance); ok {
+			conc.setProxyAuth(proxy.Username, proxy.Password)
+		}
+	}
+
+	return nil
 }
 
 // Release returns an instance to the pool after resetting its state.
@@ -184,7 +219,13 @@ func (p *Pool) prewarm() error {
 // spawnInstance creates a new Chromium instance and registers it with the pool.
 func (p *Pool) spawnInstance() (*instance, error) {
 	id := fmt.Sprintf("chrome-%d", p.counter.Add(1))
-	opts := BuildAllocatorOptions(p.cfg.ChromiumPath)
+
+	var extra []chromedp.ExecAllocatorOption
+	if p.cfg.ProxyURL != "" {
+		extra = append(extra, chromedp.ProxyServer(p.cfg.ProxyURL))
+	}
+
+	opts := BuildAllocatorOptions(p.cfg.ChromiumPath, extra...)
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	inst, err := newInstance(allocCtx, allocCancel, id)
