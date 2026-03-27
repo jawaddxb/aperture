@@ -1207,58 +1207,58 @@ console.<span class="fn">log</span>(page.structured_data.price);
       </thead>
       <tbody>
         <tr>
-          <td>Core primitive</td>
-          <td>Browser hours</td>
-          <td>Browser contexts</td>
-          <td>Agent sessions</td>
+          <td>Anti-bot bypass</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td><strong>Auto-detect + Camoufox fallback</strong></td>
+        </tr>
+        <tr>
+          <td>Stealth hardening</td>
+          <td>Basic</td>
+          <td class="cross">None</td>
+          <td>12-layer engine (canvas, WebRTC, viewport, mouse…)</td>
         </tr>
         <tr>
           <td>Input</td>
           <td>CDP commands</td>
           <td>CSS selectors / XPath</td>
-          <td>Semantic actions — <code class="mono" style="font-size:12px;color:var(--copper);">"Add to Cart"</code></td>
+          <td>Natural language — <code class="mono" style="font-size:12px;color:var(--copper);">"Extract the top 3 posts"</code></td>
         </tr>
         <tr>
-          <td>Output</td>
-          <td>Screenshots / DOM</td>
-          <td>DOM / screenshots</td>
-          <td>Typed JSON with schema validation</td>
+          <td>LLM planning</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td>OpenRouter-powered multi-step planning</td>
         </tr>
         <tr>
-          <td>Page understanding</td>
-          <td class="cross">None</td>
-          <td class="cross">None</td>
-          <td>Site Profiles → structured data</td>
+          <td>Data extraction</td>
+          <td>Screenshots only</td>
+          <td>DOM parsing</td>
+          <td>Schema-based LLM extraction → typed JSON</td>
         </tr>
         <tr>
-          <td>Policy engine</td>
-          <td class="cross">None</td>
-          <td class="cross">None</td>
-          <td>xBPP — 12-check governance</td>
+          <td>Cloudflare bypass</td>
+          <td class="cross">Blocked</td>
+          <td class="cross">Blocked</td>
+          <td><strong>✓ Scrapling/Camoufox auto-fallback</strong></td>
         </tr>
         <tr>
-          <td>Auth management</td>
+          <td>MCP integration</td>
           <td class="cross">None</td>
-          <td class="cross">Manual</td>
-          <td>3-tier managed auth</td>
-        </tr>
-        <tr>
-          <td>Audit trail</td>
-          <td>Basic logs</td>
           <td class="cross">None</td>
-          <td>Full telemetry + verification</td>
+          <td>5 native MCP tools (stdio)</td>
         </tr>
         <tr>
           <td>Typical code</td>
           <td>50+ lines / task</td>
           <td>40+ lines / task</td>
-          <td><strong>5–10 lines / task</strong></td>
+          <td><strong>1 MCP call</strong></td>
         </tr>
         <tr>
-          <td>Billing</td>
+          <td>Cost</td>
           <td>~$0.10/min</td>
           <td>Free + infra</td>
-          <td>$0.001–0.005 / action</td>
+          <td>Open source — self-hosted, free</td>
         </tr>
       </tbody>
     </table>
@@ -1316,9 +1316,9 @@ console.<span class="fn">log</span>(page.structured_data.price);
      ============================================================ -->
 <section class="profiles">
   <div class="container">
-    <div class="label">Site Profiles</div>
-    <h2 class="section-heading">Every website becomes a typed&nbsp;API</h2>
-    <p class="section-desc">The agent doesn't see the page. The agent sees structured data. Site Profiles translate the messy web into standardized schemas.</p>
+    <div class="label">Data Extraction</div>
+    <h2 class="section-heading">Every page becomes structured&nbsp;data</h2>
+    <p class="section-desc">Describe what you want. Aperture navigates, renders the page (bypassing anti-bot if needed), and extracts typed JSON via LLM — no selectors, no DOM parsing.</p>
 
     <div class="profiles-grid">
       <div>
@@ -1326,58 +1326,58 @@ console.<span class="fn">log</span>(page.structured_data.price);
           <div class="profiles-feature">
             <div class="profiles-feature-icon">◎</div>
             <div>
-              <h4>Structured, not scraped</h4>
-              <p>Price is a number, not a string inside a div inside a span. Typed data from the first API call.</p>
+              <h4>Schema-based extraction</h4>
+              <p>Define your schema in plain English: "Extract product name, price, and rating." Get typed JSON back. The LLM handles the HTML.</p>
             </div>
           </div>
           <div class="profiles-feature">
             <div class="profiles-feature-icon">⚡</div>
             <div>
-              <h4>Actions, not selectors</h4>
-              <p>"Add to Cart" resolves to the right button on every Shopify store, every Amazon page. No CSS selectors to maintain.</p>
+              <h4>Works on protected sites</h4>
+              <p>Extract data from Cloudflare-protected, PerimeterX, and DataDome sites. Aperture handles the anti-bot bypass before extraction.</p>
             </div>
           </div>
           <div class="profiles-feature">
             <div class="profiles-feature-icon">↻</div>
             <div>
-              <h4>Self-healing</h4>
-              <p>When Amazon changes their DOM, we catch it within hours. Automated testing against live sites daily.</p>
+              <h4>Scoped extraction</h4>
+              <p>Target specific page sections with CSS selectors. Extract from a table, a sidebar, or the main content — not the entire page noise.</p>
             </div>
           </div>
           <div class="profiles-feature">
             <div class="profiles-feature-icon">∞</div>
             <div>
-              <h4>Network effect</h4>
-              <p>Every interaction through Aperture improves profile accuracy for all users. The moat compounds.</p>
+              <h4>JSON or Markdown</h4>
+              <p>Choose your output format. JSON for structured pipelines. Markdown for agent context. Both go through the same LLM extraction.</p>
             </div>
           </div>
         </div>
       </div>
       <div class="profiles-json">
         <div class="profiles-json-header">
-          <span>amazon.com — product_detail</span>
-          <span>Site Profile response</span>
+          <span>news.ycombinator.com — extraction</span>
+          <span>MCP extract response</span>
         </div>
 <pre>{
-  <span class="key">"page_type"</span>: <span class="str">"product_detail"</span>,
-  <span class="key">"data"</span>: {
-    <span class="key">"title"</span>: <span class="str">"Sony WH-1000XM5"</span>,
-    <span class="key">"price"</span>: <span class="num">348.00</span>,
-    <span class="key">"currency"</span>: <span class="str">"USD"</span>,
-    <span class="key">"rating"</span>: <span class="num">4.6</span>,
-    <span class="key">"review_count"</span>: <span class="num">12847</span>,
-    <span class="key">"availability"</span>: <span class="str">"in_stock"</span>,
-    <span class="key">"delivery"</span>: <span class="str">"Tomorrow, Mar 27"</span>
-  },
-  <span class="key">"actions"</span>: {
-    <span class="key">"add_to_cart"</span>: {
-      <span class="key">"confidence"</span>: <span class="num">0.98</span>
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: [
+    {
+      <span class="key">"rank"</span>: <span class="num">1</span>,
+      <span class="key">"title"</span>: <span class="str">"Show HN: Aperture – browser engine for AI agents"</span>,
+      <span class="key">"score"</span>: <span class="num">342</span>,
+      <span class="key">"author"</span>: <span class="str">"jawadash"</span>,
+      <span class="key">"comments"</span>: <span class="num">127</span>
     },
-    <span class="key">"buy_now"</span>: {
-      <span class="key">"confidence"</span>: <span class="num">0.97</span>
+    {
+      <span class="key">"rank"</span>: <span class="num">2</span>,
+      <span class="key">"title"</span>: <span class="str">"PostgreSQL 18 Released"</span>,
+      <span class="key">"score"</span>: <span class="num">289</span>,
+      <span class="key">"author"</span>: <span class="str">"pg_fan"</span>,
+      <span class="key">"comments"</span>: <span class="num">94</span>
     }
-  },
-  <span class="key">"profile_matched"</span>: <span class="bool">true</span>
+  ],
+  <span class="key">"method"</span>: <span class="str">"native_chrome"</span>,
+  <span class="key">"duration_ms"</span>: <span class="num">3200</span>
 }</pre>
       </div>
     </div>
@@ -1390,72 +1390,58 @@ console.<span class="fn">log</span>(page.structured_data.price);
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="label">Pricing</div>
-    <h2 class="section-heading">Pay per action, not per hour</h2>
-    <p class="section-desc">Fast agents cost less. Per-action billing aligns cost with value. No idle browser charges.</p>
+    <h2 class="section-heading">Open source. Self-hosted. Free.</h2>
+    <p class="section-desc">Aperture is MIT-licensed. Run it on your machine. No API keys to us, no usage limits, no vendor lock-in.</p>
 
     <div class="pricing-grid">
-      <!-- Hacker -->
-      <div class="pricing-card">
-        <div class="pricing-tier">Hacker</div>
-        <div class="pricing-price">$0 <span class="period">/ mo</span></div>
-        <div class="pricing-credits">10,000 credits included</div>
-        <ul class="pricing-features">
-          <li>Core API access</li>
-          <li>1 agent</li>
-          <li>5 concurrent sessions</li>
-          <li>Local audit log</li>
-          <li>Community support</li>
-        </ul>
-        <a href="#" class="btn btn-secondary">Start Building</a>
-      </div>
-
-      <!-- Builder -->
+      <!-- Self-Hosted -->
       <div class="pricing-card featured">
-        <div class="pricing-featured-tag">Popular</div>
-        <div class="pricing-tier">Builder</div>
-        <div class="pricing-price">$49 <span class="period">/ mo</span></div>
-        <div class="pricing-credits">100,000 credits · $0.0008 overage</div>
+        <div class="pricing-featured-tag">Available Now</div>
+        <div class="pricing-tier">Self-Hosted</div>
+        <div class="pricing-price">$0 <span class="period">forever</span></div>
+        <div class="pricing-credits">MIT License — use commercially</div>
         <ul class="pricing-features">
-          <li>Full API + Site Profiles</li>
-          <li>10 agents</li>
-          <li>25 concurrent sessions</li>
-          <li>Credential Vault</li>
-          <li>Memory persistence</li>
-          <li>Email support (48h)</li>
+          <li>Full browser automation engine</li>
+          <li>5 MCP tools (execute, screenshot, extract…)</li>
+          <li>12-layer stealth hardening</li>
+          <li>Cloudflare / PerimeterX / DataDome bypass</li>
+          <li>LLM planning (bring your own key)</li>
+          <li>Scrapling / Camoufox auto-fallback</li>
+          <li>Unlimited sessions &amp; agents</li>
         </ul>
-        <a href="#" class="btn btn-primary">Get API Key</a>
+        <a href="https://github.com/jawaddxb/aperture" class="btn btn-primary">Clone from GitHub</a>
       </div>
 
-      <!-- Scale -->
+      <!-- Cloud -->
       <div class="pricing-card">
-        <div class="pricing-tier">Scale</div>
-        <div class="pricing-price">$299 <span class="period">/ mo</span></div>
-        <div class="pricing-credits">1,000,000 credits · $0.0005 overage</div>
+        <div class="pricing-tier">Cloud</div>
+        <div class="pricing-price">Coming Soon</div>
+        <div class="pricing-credits">Managed infrastructure — zero ops</div>
         <ul class="pricing-features">
-          <li>Everything in Builder</li>
-          <li>Unlimited agents</li>
-          <li>100 concurrent sessions</li>
-          <li>OAuth Proxy</li>
-          <li>Custom policy rules</li>
-          <li>All verification adapters</li>
-          <li>Slack support (4h)</li>
+          <li>Everything in Self-Hosted</li>
+          <li>Managed browser pool</li>
+          <li>Global proxy network</li>
+          <li>Auto-scaling sessions</li>
+          <li>Dashboard &amp; monitoring</li>
+          <li>Team management</li>
+          <li>Priority support</li>
         </ul>
-        <a href="#" class="btn btn-secondary">Contact Sales</a>
+        <a href="#" class="btn btn-secondary">Join Waitlist</a>
       </div>
 
       <!-- Enterprise -->
       <div class="pricing-card">
         <div class="pricing-tier">Enterprise</div>
         <div class="pricing-price">Custom</div>
-        <div class="pricing-credits">Volume pricing + SLA</div>
+        <div class="pricing-credits">Dedicated infrastructure + SLA</div>
         <ul class="pricing-features">
-          <li>Everything in Scale</li>
+          <li>Everything in Cloud</li>
           <li>Dedicated browser pool</li>
-          <li>Session Handoff</li>
-          <li>On-prem option</li>
-          <li>Custom verification adapters</li>
-          <li>SOC 2 compliance package</li>
-          <li>Dedicated support</li>
+          <li>On-prem deployment</li>
+          <li>Custom proxy integration</li>
+          <li>SSO / SAML</li>
+          <li>Compliance package</li>
+          <li>Dedicated support engineer</li>
         </ul>
         <a href="#" class="btn btn-secondary">Talk to Us</a>
       </div>
@@ -1469,66 +1455,54 @@ console.<span class="fn">log</span>(page.structured_data.price);
 <section class="sdk" id="sdk">
   <div class="container">
     <div class="label">Developer Experience</div>
-    <h2 class="section-heading">5 lines. Governed. Structured.</h2>
-    <p class="section-desc">TypeScript and Python SDKs with Zod and Pydantic schema validation. Typed from request to response.</p>
+    <h2 class="section-heading">One call. Any site. Structured data.</h2>
+    <p class="section-desc">Use Aperture via MCP tools (for AI agents), REST API (for apps), or curl (for testing). No SDK required.</p>
 
     <div class="sdk-grid">
       <div class="sdk-block">
         <div class="sdk-block-header">
-          <span class="sdk-block-lang">TypeScript</span>
-          <span class="sdk-block-install">npm i @aperture/sdk</span>
+          <span class="sdk-block-lang">MCP Tool Call</span>
+          <span class="sdk-block-install">via OpenClaw / Claude</span>
         </div>
-<pre><span class="kw">import</span> { Aperture } <span class="kw">from</span> <span class="str">'@aperture/sdk'</span>;
-<span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+<pre><span class="cm">// Agent calls the "extract" MCP tool</span>
+{
+  <span class="key">"tool"</span>: <span class="str">"extract"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"url"</span>: <span class="str">"https://news.ycombinator.com"</span>,
+    <span class="key">"schema"</span>: <span class="str">"Top 5 posts with title, score, and author"</span>,
+    <span class="key">"format"</span>: <span class="str">"json"</span>
+  }
+}
 
-<span class="kw">const</span> session = <span class="kw">await</span> aperture.session
-  .<span class="fn">create</span>({
-    agentId: <span class="str">'my-agent'</span>,
-    domains: [<span class="str">'*.amazon.com'</span>],
-    budget: <span class="num">500</span>,
-  });
-
-<span class="kw">const</span> page = <span class="kw">await</span> session
-  .<span class="fn">navigate</span>(<span class="str">'https://amazon.com/dp/B0X'</span>);
-
-<span class="cm">// Typed extraction with Zod</span>
-<span class="kw">const</span> products = <span class="kw">await</span> session
-  .<span class="fn">extract</span>(<span class="str">'search results'</span>, {
-    schema: z.<span class="fn">array</span>(z.<span class="fn">object</span>({
-      title: z.<span class="fn">string</span>(),
-      price: z.<span class="fn">number</span>(),
-      rating: z.<span class="fn">number</span>(),
-    })),
-  });</pre>
+<span class="cm">// Or use "execute" for multi-step tasks</span>
+{
+  <span class="key">"tool"</span>: <span class="str">"execute"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"goal"</span>: <span class="str">"Go to GitHub trending and screenshot the page"</span>,
+    <span class="key">"url"</span>: <span class="str">"https://github.com/trending"</span>
+  }
+}</pre>
       </div>
       <div class="sdk-block">
         <div class="sdk-block-header">
-          <span class="sdk-block-lang">Python</span>
-          <span class="sdk-block-install">pip install aperture-sdk</span>
+          <span class="sdk-block-lang">curl</span>
+          <span class="sdk-block-install">REST API on port 8080</span>
         </div>
-<pre><span class="kw">from</span> aperture <span class="kw">import</span> Aperture
-<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+<pre><span class="cm"># Screenshot any URL</span>
+<span class="kw">curl</span> -X POST http://localhost:8080/api/v1/actions/screenshot \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{"url":"https://producthunt.com"}'</span>
 
-<span class="kw">class</span> <span class="fn">Product</span>(BaseModel):
-    title: str
-    price: float
-    rating: float
+<span class="cm"># Multi-step browser task with LLM planning</span>
+<span class="kw">curl</span> -X POST <span class="str">"http://localhost:8080/api/v1/bridge/execute?sync=true"</span> \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{
+    "goal": "Navigate to Amazon, search for headphones, extract top 3 results with prices",
+    "url": "https://amazon.com"
+  }'</span>
 
-<span class="kw">async with</span> aperture.<span class="fn">session</span>(
-    agent_id=<span class="str">"my-agent"</span>,
-    domains=[<span class="str">"*.amazon.com"</span>],
-    budget=<span class="num">500</span>,
-) <span class="kw">as</span> session:
-    page = <span class="kw">await</span> session.<span class="fn">navigate</span>(
-        <span class="str">"https://amazon.com/dp/B0X"</span>
-    )
-
-    <span class="cm"># Typed extraction with Pydantic</span>
-    products = <span class="kw">await</span> session.<span class="fn">extract</span>(
-        <span class="str">"search results"</span>,
-        schema=Product,
-        many=True,
-    )</pre>
+<span class="cm"># Health check</span>
+<span class="kw">curl</span> http://localhost:8080/api/v1/bridge/health</pre>
       </div>
     </div>
   </div>
@@ -1549,14 +1523,14 @@ console.<span class="fn">log</span>(page.structured_data.price);
           </svg>
           aperture
         </div>
-        <p class="footer-tagline">The trust and execution layer between AI agents and the real world. Every action governed. Every result structured.</p>
+        <p class="footer-tagline">High-performance browser automation for AI agents. Stealth-hardened. Anti-bot detection built in. Open source.</p>
       </div>
       <div class="footer-col">
         <h4>Product</h4>
         <ul>
           <li><a href="#">Documentation</a></li>
           <li><a href="#">API Reference</a></li>
-          <li><a href="#">Site Profiles</a></li>
+          <li><a href="#">MCP Tools</a></li>
           <li><a href="#">Changelog</a></li>
           <li><a href="#">Status</a></li>
         </ul>
