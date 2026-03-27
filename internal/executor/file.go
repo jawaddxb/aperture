@@ -44,39 +44,15 @@ func (e *UploadExecutor) Execute(
 		return failResult(result, start, fmt.Errorf("upload: %w", err)), nil
 	}
 
-	timeout := defaultNavigateTimeout
-	if v, ok := params["timeout"]; ok {
-		if d, ok := v.(time.Duration); ok {
-			timeout = d
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, resolveTimeout(params))
 	defer cancel()
 
-	// Use "target" as a resolution target if provided.
-	t := buildResolutionTarget(params)
-	if target, ok := params["target"].(string); ok && t.Text == "" && t.Selector == "" {
-		t.Text = target
-	}
-
-	// Ensure role defaults to file if not specified.
-	if t.Role == "" {
-		t.Role = "file"
-	}
-
-	resolution, err := e.resolver.Resolve(ctx, t, inst)
+	candidate, err := e.resolveTarget(ctx, inst, params)
 	if err != nil {
 		return failResult(result, start, fmt.Errorf("upload: resolve: %w", err)), nil
 	}
 
-	if len(resolution.Candidates) == 0 {
-		return failResult(result, start, fmt.Errorf("upload: no candidates for %+v", t)), nil
-	}
-
-	candidate := resolution.Candidates[0]
-	sel := selectorForCandidate(candidate)
-
+	sel := selectorForCandidate(*candidate)
 	if err := chromedp.Run(inst.Context(), chromedp.SetUploadFiles(sel, files, chromedp.ByQuery)); err != nil {
 		return failResult(result, start, fmt.Errorf("upload: set files: %w", err)), nil
 	}
@@ -87,10 +63,34 @@ func (e *UploadExecutor) Execute(
 	}
 
 	result.Success = true
-	result.Element = &candidate
+	result.Element = candidate
 	result.PageState = pageState
 	result.Duration = time.Since(start)
 	return result, nil
+}
+
+// resolveTarget resolves the target file input element.
+func (e *UploadExecutor) resolveTarget(
+	ctx context.Context,
+	inst domain.BrowserInstance,
+	params map[string]interface{},
+) (*domain.Candidate, error) {
+	t := buildResolutionTarget(params)
+	if target, ok := params["target"].(string); ok && t.Text == "" && t.Selector == "" {
+		t.Text = target
+	}
+	if t.Role == "" {
+		t.Role = "file"
+	}
+
+	resolution, err := e.resolver.Resolve(ctx, t, inst)
+	if err != nil {
+		return nil, err
+	}
+	if len(resolution.Candidates) == 0 {
+		return nil, fmt.Errorf("no candidates for %+v", t)
+	}
+	return &resolution.Candidates[0], nil
 }
 
 // stringSliceParam extracts a required string slice from params.
