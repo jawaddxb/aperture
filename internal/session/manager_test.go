@@ -20,6 +20,8 @@ func (b *stubBrowserInstance) ID() string               { return b.id }
 func (b *stubBrowserInstance) CreatedAt() time.Time     { return time.Time{} }
 func (b *stubBrowserInstance) IsAlive() bool            { return true }
 func (b *stubBrowserInstance) Close() error             { return nil }
+func (b *stubBrowserInstance) Downloads() domain.DownloadManager { return nil }
+func (b *stubBrowserInstance) Network() domain.NetworkManager   { return nil }
 
 // stubPool is a minimal in-memory BrowserPool with release tracking.
 type stubPool struct {

@@ -97,6 +97,8 @@ func (s *stubBrowserInstance) ID() string               { return "stub-0" }
 func (s *stubBrowserInstance) CreatedAt() time.Time     { return time.Time{} }
 func (s *stubBrowserInstance) IsAlive() bool            { return false }
 func (s *stubBrowserInstance) Close() error             { return nil }
+func (s *stubBrowserInstance) Downloads() domain.DownloadManager { return nil }
+func (s *stubBrowserInstance) Network() domain.NetworkManager   { return nil }
 
 // inst_unused returns a cancelled context for tests that never use the browser.
 func inst_unused() context.Context {

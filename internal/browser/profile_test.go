@@ -3,7 +3,6 @@ package browser
 import (
 	"context"
 	"os"
-	"runtime"
 	"testing"
 
 	cdpnetwork "github.com/chromedp/cdproto/network"
@@ -11,31 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// chromiumPath resolves the Chromium binary path for integration tests.
-// Tests are skipped when no binary is found.
-func chromiumPath(t *testing.T) string {
-	t.Helper()
-	if p := os.Getenv("APERTURE_CHROMIUM_PATH"); p != "" {
-		return p
-	}
-	switch runtime.GOOS {
-	case "darwin":
-		return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-	case "linux":
-		for _, p := range []string{
-			"/usr/bin/chromium",
-			"/usr/bin/chromium-browser",
-			"/usr/bin/google-chrome",
-		} {
-			if _, err := os.Stat(p); err == nil {
-				return p
-			}
-		}
-	}
-	t.Skip("no Chromium binary found; set APERTURE_CHROMIUM_PATH to enable")
-	return ""
-}
 
 // TestProfileManager_CreateDelete verifies profile creation and deletion via FileProfileManager.
 func TestProfileManager_CreateDelete(t *testing.T) {

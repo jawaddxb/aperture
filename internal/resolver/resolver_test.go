@@ -23,6 +23,8 @@ func (s *stubBrowserInstance) ID() string               { return "stub-0" }
 func (s *stubBrowserInstance) CreatedAt() time.Time     { return time.Time{} }
 func (s *stubBrowserInstance) IsAlive() bool            { return false }
 func (s *stubBrowserInstance) Close() error             { return nil }
+func (s *stubBrowserInstance) Downloads() domain.DownloadManager { return nil }
+func (s *stubBrowserInstance) Network() domain.NetworkManager   { return nil }
 
 // stubAXTreeResolver is an AXTreeResolver whose Snapshot behaviour is injected.
 // It wraps an ordinary AXTreeResolver but overrides Snapshot + FindByRole via

@@ -48,6 +48,25 @@ type BrowserInstance interface {
 
 	// Close terminates the Chromium process and releases all associated resources.
 	Close() error
+
+	// Downloads returns the DownloadManager for this instance.
+	Downloads() DownloadManager
+
+	// Network returns the NetworkManager for this instance.
+	Network() NetworkManager
+}
+
+// NetworkRule defines a rule for intercepting network requests.
+type NetworkRule struct {
+	URLPattern string
+	Action     string // "block", "allow", "mock"
+	MockBody   string
+}
+
+// NetworkManager provides control over network requests.
+type NetworkManager interface {
+	// SetRules applies a set of network rules to the browser instance.
+	SetRules(ctx context.Context, rules []NetworkRule) error
 }
 
 // ErrPoolExhausted is returned by BrowserPool.Acquire when all instances
@@ -132,4 +151,28 @@ type ProfileManager interface {
 	CreateProfile(ctx context.Context, id string) (*Profile, error)
 	// DeleteProfile removes the profile directory for the given ID.
 	DeleteProfile(ctx context.Context, id string) error
+}
+
+// Download represents a file being downloaded.
+type Download struct {
+	GUID           string
+	URL            string
+	Filename       string
+	LocalPath      string
+	TotalBytes     int64
+	ReceivedBytes  int64
+	State          string // "in_progress", "completed", "canceled"
+}
+
+// DownloadManager tracks and manages file downloads for a browser instance.
+type DownloadManager interface {
+	// SetDownloadBehavior configures how downloads are handled.
+	// downloadPath is the local directory where files will be saved.
+	SetDownloadBehavior(ctx context.Context, downloadPath string) error
+
+	// ListDownloads returns all downloads tracked by this manager.
+	ListDownloads() []Download
+
+	// GetDownload returns a specific download by its GUID.
+	GetDownload(guid string) (Download, bool)
 }

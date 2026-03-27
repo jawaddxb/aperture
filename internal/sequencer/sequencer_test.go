@@ -34,6 +34,8 @@ func (s *stubBrowserInstance) ID() string               { return "stub-0" }
 func (s *stubBrowserInstance) CreatedAt() time.Time     { return time.Time{} }
 func (s *stubBrowserInstance) IsAlive() bool            { return true }
 func (s *stubBrowserInstance) Close() error             { return nil }
+func (s *stubBrowserInstance) Downloads() domain.DownloadManager { return nil }
+func (s *stubBrowserInstance) Network() domain.NetworkManager   { return nil }
 
 func newStubInst() domain.BrowserInstance {
 	return &stubBrowserInstance{ctx: context.Background()}

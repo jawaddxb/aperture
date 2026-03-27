@@ -25,6 +25,8 @@ type instance struct {
 	closed      atomic.Bool
 	stealth     domain.StealthConfig
 	profileID   string
+	downloads   domain.DownloadManager
+	network     domain.NetworkManager
 
 	proxyMu   sync.Mutex
 	proxyUser string
@@ -59,6 +61,8 @@ func newInstance(allocCtx context.Context, allocCancel context.CancelFunc, id st
 		tabCancel:   tabCancel,
 		stealth:     stealth,
 		profileID:   profileID,
+		downloads:   NewChromeDownloadManager(),
+		network:     NewChromeNetworkManager(),
 	}, nil
 }
 
@@ -89,6 +93,16 @@ func (i *instance) IsAlive() bool {
 	default:
 		return true
 	}
+}
+
+// Downloads returns the download manager for this instance.
+func (i *instance) Downloads() domain.DownloadManager {
+	return i.downloads
+}
+
+// Network returns the network manager for this instance.
+func (i *instance) Network() domain.NetworkManager {
+	return i.network
 }
 
 // Close terminates the Chromium process and releases all associated resources.
