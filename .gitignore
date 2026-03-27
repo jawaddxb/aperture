@@ -1,0 +1,43 @@
+# Go
+bin/
+tmp/
+*.test
+*.out
+coverage.html
+coverage.out
+
+# Build artifacts
+aperture-server
+
+# Config (keep example, ignore real config)
+aperture.yaml
+!aperture.yaml.example
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Air hot-reload
+tmp/
+
+# Docker
+.docker/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+testdata/*.generated.*

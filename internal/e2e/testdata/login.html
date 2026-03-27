@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    .success { color: green; display: none; }
+    label { display: block; margin-top: 1rem; }
+    input { margin-top: 0.25rem; padding: 0.25rem; }
+    button { margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Login</h1>
+  <div id="success" class="success">Login successful!</div>
+  <form id="loginForm">
+    <label for="email">Email
+      <input id="email" name="email" type="email" placeholder="you@example.com">
+    </label>
+    <label for="password">Password
+      <input id="password" name="password" type="password" placeholder="••••••••">
+    </label>
+    <button type="submit" id="submitBtn">Sign In</button>
+  </form>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      document.getElementById('success').style.display = 'block';
+    });
+  </script>
+</body>
+</html>

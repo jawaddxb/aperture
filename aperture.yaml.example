@@ -1,0 +1,33 @@
+# aperture.yaml.example — Copy to aperture.yaml and configure for your environment.
+# All values can be overridden with APERTURE_* environment variables.
+# Example: APERTURE_SERVER_PORT=9090 overrides server.port below.
+
+server:
+  # TCP port to listen on (default: 8080)
+  port: 8080
+  # Host/IP to bind to (default: 0.0.0.0)
+  host: "0.0.0.0"
+
+browser:
+  # Number of pre-warmed Chromium instances in the pool (default: 5)
+  pool_size: 5
+  # REQUIRED: Absolute path to Chromium or Google Chrome binary.
+  # On macOS: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+  # On Linux: /usr/bin/chromium or /usr/bin/chromium-browser
+  chromium_path: "/usr/bin/chromium"
+
+redis:
+  # Redis connection URL for agent KV store (default: redis://localhost:6379)
+  url: "redis://localhost:6379"
+
+sqlite:
+  # Path to the SQLite database file (default: aperture.db)
+  path: "aperture.db"
+
+log:
+  # Log level: debug, info, warn, error (default: info)
+  level: "info"
+
+api:
+  # Prefix used for API key generation and validation (default: apt_)
+  key_prefix: "apt_"

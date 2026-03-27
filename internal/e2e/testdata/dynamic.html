@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dynamic Content</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    #hidden { display: none; color: green; margin-top: 1rem; }
+    #delayed { color: blue; margin-top: 1rem; }
+    button { padding: 0.5rem 1rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Dynamic Content</h1>
+  <button id="revealBtn">Reveal</button>
+  <div id="hidden">Hidden content revealed!</div>
+  <div id="delayed">Loading…</div>
+
+  <script>
+    document.getElementById('revealBtn').addEventListener('click', function() {
+      document.getElementById('hidden').style.display = 'block';
+    });
+
+    // Simulate delayed content load after 300ms.
+    setTimeout(function() {
+      document.getElementById('delayed').textContent = 'Delayed content loaded!';
+    }, 300);
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# .air.toml — hot reload config for air (github.com/air-verse/air)
+# Run: air  (or: make run)
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Binary to build and run.
+  bin = "bin/aperture-server"
+  # Build command.
+  cmd = "make build"
+  # Delay before rebuild (ms).
+  delay = 500
+  # Directories to exclude from watching.
+  exclude_dir = ["bin", "tmp", "vendor", "testdata", "deploy", ".git", "docs", "sdk"]
+  # File extensions to watch.
+  include_ext = ["go", "yaml", "yml"]
+  # Kill delay (ms) between old process kill and new process start.
+  kill_delay = 200
+  # Rerun on error.
+  rerun = false
+  # Log to file for debugging.
+  log = "tmp/build-errors.log"
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

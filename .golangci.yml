@@ -1,0 +1,48 @@
+# golangci-lint configuration for Aperture.
+# Run: golangci-lint run ./...
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - govet       # Reports suspicious constructs
+    - errcheck    # Checks that errors are handled
+    - staticcheck # Go static analysis checks
+    - gosec       # Security checks
+    - gofmt       # Formatting consistency
+    - godot       # Comment formatting (sentences end with period)
+    - unused      # Unused code detection
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # Allow struct field ordering for readability
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  gosec:
+    excludes:
+      - G104  # Audit errors not being handled (we handle them explicitly)
+
+  staticcheck:
+    checks:
+      - "all"
+      - "-SA1019"  # Allow deprecated usage during migrations
+
+issues:
+  exclude-rules:
+    # Test files can have unused variables in table-driven tests.
+    - path: "_test\\.go"
+      linters:
+        - unused
+        - godot
+    # Generated code (e.g., mocks) excluded from strict checks.
+    - path: "internal/mock/"
+      linters:
+        - unused
+        - errcheck
