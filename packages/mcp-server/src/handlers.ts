@@ -26,6 +26,8 @@ export class ToolHandlers {
         return this.handleNavigation(args);
       case 'pool_status':
         return this.handlePoolStatus();
+      case 'extract':
+        return this.handleExtract(args);
       default:
         return this.errorResult(`Unknown tool: ${name}`);
     }
@@ -136,6 +138,31 @@ export class ToolHandlers {
       };
     } catch (err) {
       return this.errorResult(`pool_status failed: ${(err as Error).message}`);
+    }
+  }
+
+  private async handleExtract(args: Record<string, unknown>): Promise<CallToolResult> {
+    const url = String(args.url ?? '');
+    const schema = String(args.schema ?? '');
+    if (!url || !schema) {
+      return this.errorResult('extract: "url" and "schema" are required');
+    }
+
+    const selector = args.selector !== undefined ? String(args.selector) : undefined;
+    const format = args.format !== undefined ? String(args.format) : 'json';
+
+    try {
+      const result = await this.client.extract({ url, schema, selector, format });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      return this.errorResult(`extract failed: ${(err as Error).message}`);
     }
   }
 

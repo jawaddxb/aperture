@@ -3,8 +3,8 @@
  * Single responsibility: describe the 4 tools; no execution logic.
  */
 
-/** ToolName enumerates the 4 Aperture MCP tools. */
-export type ToolName = 'execute' | 'screenshot' | 'navigation' | 'pool_status';
+/** ToolName enumerates the 5 Aperture MCP tools. */
+export type ToolName = 'execute' | 'screenshot' | 'navigation' | 'pool_status' | 'extract';
 
 /** ToolDefinition is the MCP tool descriptor shape used in listTools. */
 export interface ToolDefinition {
@@ -103,6 +103,38 @@ export const ALL_TOOLS: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {},
+    },
+  },
+  {
+    name: 'extract',
+    description:
+      'Extract structured data from a web page using an LLM. ' +
+      'Navigate to a URL and extract data matching a schema or description. ' +
+      'Returns JSON or markdown-formatted extracted content.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL to navigate to and extract data from.',
+        },
+        schema: {
+          type: 'string',
+          description:
+            'What to extract — a JSON schema or natural-language description. ' +
+            'Example: "Extract all article titles, authors, and dates as JSON array"',
+        },
+        selector: {
+          type: 'string',
+          description: 'Optional CSS selector to scope extraction to a specific page section.',
+        },
+        format: {
+          type: 'string',
+          enum: ['json', 'markdown'],
+          description: 'Output format (default: json).',
+        },
+      },
+      required: ['url', 'schema'],
     },
   },
 ];

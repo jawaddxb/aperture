@@ -128,6 +128,26 @@ export class ApertureClient {
     return this.get<PoolStatusResponse>('/api/v1/bridge/health');
   }
 
+  /** ExtractParams holds parameters for a data extraction call. */
+
+  /** extract navigates to a URL and extracts structured data via the bridge. */
+  async extract(params: {
+    url: string;
+    schema: string;
+    selector?: string;
+    format?: string;
+  }): Promise<TaskResponse> {
+    const selectorClause = params.selector ? ` within "${params.selector}"` : '';
+    const formatClause = params.format === 'markdown' ? ' as markdown' : ' as JSON';
+    const goal = `Navigate to ${params.url}, then extract: ${params.schema}${selectorClause}${formatClause}`;
+
+    return this.post<TaskResponse>('/api/v1/bridge/execute?sync=true', {
+      goal,
+      url: params.url,
+      config: { timeout: 60 },
+    });
+  }
+
   /** healthCheck verifies the Aperture server is reachable. */
   async healthCheck(): Promise<boolean> {
     try {
