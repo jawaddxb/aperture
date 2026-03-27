@@ -8,15 +8,23 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// turnstileSelector matches the Cloudflare Turnstile challenge iframe.
-const turnstileSelector = `iframe[src*="challenges.cloudflare.com"]`
+// challengeSelectors match known anti-bot challenge iframes.
+var challengeSelectors = []string{
+	`iframe[src*="challenges.cloudflare.com"]`,  // Cloudflare Turnstile
+	`iframe[src*="geo.captcha-delivery.com"]`,   // DataDome
+	`iframe[src*="captcha.px-cdn.net"]`,          // PerimeterX
+	`#px-captcha`,                                 // PerimeterX press-and-hold
+}
 
-// interstitialTexts are texts shown on various Cloudflare challenge pages.
+// interstitialTexts are texts shown on various challenge pages.
 var interstitialTexts = []string{
 	"Checking your browser",
 	"Performing security verification",
 	"Verify you are human",
 	"challenges.cloudflare.com",
+	"Press & Hold",            // PerimeterX
+	"Please verify you are a human", // DataDome
+	"Pardon Our Interruption", // Akamai
 }
 
 // WaitForTurnstile detects and waits for a Cloudflare Turnstile challenge to resolve.
@@ -53,16 +61,25 @@ func WaitForTurnstile(ctx context.Context, timeout time.Duration) error {
 // isTurnstilePresent checks if a Turnstile iframe or interstitial page exists.
 func isTurnstilePresent(ctx context.Context) (bool, error) {
 	var found bool
-	// Build a JS check that looks for the Turnstile iframe OR any known interstitial text.
+	// Build a JS check that looks for any challenge iframe OR known interstitial text.
 	js := fmt.Sprintf(`(function(){
-		if(document.querySelector('%s')) return true;
+		%s
 		var t = document.body ? document.body.innerText : '';
 		return %s;
-	})()`, turnstileSelector, buildTextChecks())
+	})()`, buildSelectorChecks(), buildTextChecks())
 	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &found)); err != nil {
 		return false, err
 	}
 	return found, nil
+}
+
+// buildSelectorChecks returns JS that checks for any challenge iframe/element.
+func buildSelectorChecks() string {
+	s := ""
+	for _, sel := range challengeSelectors {
+		s += fmt.Sprintf("if(document.querySelector('%s')) return true;\n\t\t", sel)
+	}
+	return s
 }
 
 // buildTextChecks returns a JS expression that checks for any interstitial text.
