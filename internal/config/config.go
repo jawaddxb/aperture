@@ -44,9 +44,13 @@ type LogConfig struct {
 	Level string `mapstructure:"level"`
 }
 
-// APIConfig holds API authentication settings.
+// APIConfig holds API authentication and rate limiting settings.
 type APIConfig struct {
-	KeyPrefix string `mapstructure:"key_prefix"`
+	KeyPrefix         string   `mapstructure:"key_prefix"`
+	Keys              []string `mapstructure:"keys"`
+	RequireAuth       bool     `mapstructure:"require_auth"`
+	RateLimitRPM      int      `mapstructure:"rate_limit_rpm"`
+	CORSOrigins       []string `mapstructure:"cors_origins"`
 }
 
 // LLMConfig holds LLM provider settings for the planner.

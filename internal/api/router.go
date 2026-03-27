@@ -38,23 +38,35 @@ type RouterConfig struct {
 
 	// Logger, when set, is used for bridge request/response logging.
 	Logger domain.ActionLogger
+
+	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
+	Auth AuthConfig
+
+	// RateLimit configures per-IP rate limiting. 0 RPM = unlimited.
+	RateLimit RateLimitConfig
+
+	// CORSOrigins is a list of allowed CORS origins. Empty = allow all.
+	CORSOrigins []string
 }
 
 // NewRouter constructs and returns the root chi router with all routes registered.
 // Pass a non-nil RouterConfig to enable the full API surface.
 func NewRouter(cfgs ...RouterConfig) http.Handler {
+	var cfg RouterConfig
+	if len(cfgs) > 0 {
+		cfg = cfgs[0]
+	}
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(CORSMiddleware(cfg.CORSOrigins))
+	r.Use(RateLimit(cfg.RateLimit))
 
+	// Health and website are always public.
 	r.Get("/health", HealthHandler)
-
-	var cfg RouterConfig
-	if len(cfgs) > 0 {
-		cfg = cfgs[0]
-	}
 
 	registerV1Routes(r, cfg)
 
@@ -68,9 +80,11 @@ func NewRouter(cfgs ...RouterConfig) http.Handler {
 	return r
 }
 
-// registerV1Routes mounts all /api/v1/* routes.
+// registerV1Routes mounts all /api/v1/* routes with optional API key auth.
 func registerV1Routes(r chi.Router, cfg RouterConfig) {
 	r.Route("/api/v1", func(r chi.Router) {
+		// Apply API key auth to all API routes (skips health/website).
+		r.Use(APIKeyAuth(cfg.Auth))
 		sh := NewSessionHandlers(cfg.SessionManager)
 		r.Post("/sessions", sh.Create)
 		r.Get("/sessions", sh.List)
