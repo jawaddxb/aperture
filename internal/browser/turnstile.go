@@ -11,8 +11,13 @@ import (
 // turnstileSelector matches the Cloudflare Turnstile challenge iframe.
 const turnstileSelector = `iframe[src*="challenges.cloudflare.com"]`
 
-// interstitialText is the text shown on Cloudflare's "checking your browser" page.
-const interstitialText = "Checking your browser"
+// interstitialTexts are texts shown on various Cloudflare challenge pages.
+var interstitialTexts = []string{
+	"Checking your browser",
+	"Performing security verification",
+	"Verify you are human",
+	"challenges.cloudflare.com",
+}
 
 // WaitForTurnstile detects and waits for a Cloudflare Turnstile challenge to resolve.
 // It returns nil if no challenge is detected or if the challenge resolves within timeout.
@@ -48,14 +53,28 @@ func WaitForTurnstile(ctx context.Context, timeout time.Duration) error {
 // isTurnstilePresent checks if a Turnstile iframe or interstitial page exists.
 func isTurnstilePresent(ctx context.Context) (bool, error) {
 	var found bool
-	js := fmt.Sprintf(
-		`!!document.querySelector('%s') || document.body.innerText.includes('%s')`,
-		turnstileSelector, interstitialText,
-	)
+	// Build a JS check that looks for the Turnstile iframe OR any known interstitial text.
+	js := fmt.Sprintf(`(function(){
+		if(document.querySelector('%s')) return true;
+		var t = document.body ? document.body.innerText : '';
+		return %s;
+	})()`, turnstileSelector, buildTextChecks())
 	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &found)); err != nil {
 		return false, err
 	}
 	return found, nil
+}
+
+// buildTextChecks returns a JS expression that checks for any interstitial text.
+func buildTextChecks() string {
+	s := ""
+	for i, text := range interstitialTexts {
+		if i > 0 {
+			s += " || "
+		}
+		s += fmt.Sprintf("t.includes('%s')", text)
+	}
+	return s
 }
 
 // isTurnstileGone checks if the Turnstile challenge has resolved (iframe removed

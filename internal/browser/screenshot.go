@@ -45,8 +45,9 @@ func (s *ScreenshotService) Screenshot(ctx context.Context, url string, fullPage
 		return nil, fmt.Errorf("navigate: %w", err)
 	}
 
-	// Wait a moment for any Turnstile challenge to appear.
-	time.Sleep(2 * time.Second)
+	// Wait for page + any Turnstile challenge to appear.
+	// Cloudflare interstitial JS loads asynchronously — needs 3-4s minimum.
+	time.Sleep(4 * time.Second)
 
 	// Check for Cloudflare challenge — if detected, try waiting then fallback.
 	if blocked, _ := isTurnstilePresent(bctx); blocked {
