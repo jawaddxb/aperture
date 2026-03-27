@@ -9,6 +9,8 @@ import (
 
 	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/chromedp"
+
+	"github.com/ApertureHQ/aperture/internal/domain"
 )
 
 // instance implements domain.BrowserInstance.
@@ -21,6 +23,8 @@ type instance struct {
 	tabCtx      context.Context // tab-level context (single tab)
 	tabCancel   context.CancelFunc
 	closed      atomic.Bool
+	stealth     domain.StealthConfig
+	profileID   string
 
 	proxyMu   sync.Mutex
 	proxyUser string
@@ -29,8 +33,15 @@ type instance struct {
 
 // newInstance launches a single Chromium process and opens one tab.
 // allocCtx must be a chromedp allocator context.
-func newInstance(allocCtx context.Context, allocCancel context.CancelFunc, id string) (*instance, error) {
+func newInstance(allocCtx context.Context, allocCancel context.CancelFunc, id string, stealth domain.StealthConfig, profileID string) (*instance, error) {
 	tabCtx, tabCancel := chromedp.NewContext(allocCtx)
+
+	// Apply stealth before initial navigation.
+	if err := ApplyStealth(tabCtx, stealth); err != nil {
+		tabCancel()
+		allocCancel()
+		return nil, fmt.Errorf("instance %s: failed to apply stealth: %w", id, err)
+	}
 
 	// Navigate to blank page to confirm the browser is alive.
 	if err := chromedp.Run(tabCtx, chromedp.Navigate("about:blank")); err != nil {
@@ -46,6 +57,8 @@ func newInstance(allocCtx context.Context, allocCancel context.CancelFunc, id st
 		allocCancel: allocCancel,
 		tabCtx:      tabCtx,
 		tabCancel:   tabCancel,
+		stealth:     stealth,
+		profileID:   profileID,
 	}, nil
 }
 
@@ -94,6 +107,13 @@ func (i *instance) Close() error {
 func (i *instance) reset() error {
 	i.tabCancel()
 	tabCtx, tabCancel := chromedp.NewContext(i.allocCtx)
+
+	// Re-apply stealth to new context.
+	if err := ApplyStealth(tabCtx, i.stealth); err != nil {
+		tabCancel()
+		return fmt.Errorf("instance %s: failed to re-apply stealth on reset: %w", i.id, err)
+	}
+
 	if err := chromedp.Run(tabCtx, chromedp.Navigate("about:blank")); err != nil {
 		tabCancel()
 		return fmt.Errorf("instance %s: reset navigation failed: %w", i.id, err)

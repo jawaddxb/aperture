@@ -125,15 +125,6 @@ func NewPauseExecutor(hitl domain.HITLManager) *PauseExecutor {
 }
 
 // Execute pauses execution and waits for human intervention.
-//
-// Supported params:
-//   - "type"      string — intervention type: "captcha", "confirmation", "input" (required)
-//   - "prompt"    string — human-readable description of what is needed (required)
-//   - "sessionID" string — session identifier forwarded to the HITLManager
-//   - "timeout"   time.Duration — override default 10-minute wait timeout
-//
-// The executor takes a screenshot of the current page and embeds it in the request.
-// On success result.Data contains the human-supplied value.
 // Implements domain.Executor.
 func (e *PauseExecutor) Execute(
 	ctx context.Context,
@@ -143,33 +134,9 @@ func (e *PauseExecutor) Execute(
 	start := time.Now()
 	result := &domain.ActionResult{Action: "pause"}
 
-	itype, err := stringParam(params, "type")
+	req, timeout, err := e.buildRequest(ctx, inst, params)
 	if err != nil {
 		return failResult(result, start, fmt.Errorf("pause: %w", err)), nil
-	}
-
-	prompt, err := stringParam(params, "prompt")
-	if err != nil {
-		return failResult(result, start, fmt.Errorf("pause: %w", err)), nil
-	}
-
-	sessionID, _ := params["sessionID"].(string)
-
-	timeout := hitlDefaultTimeout
-	if v, ok := params["timeout"].(time.Duration); ok {
-		timeout = v
-	}
-
-	// Best-effort screenshot of current page state.
-	screenshot := takeScreenshotBytes(ctx, inst)
-
-	req := &domain.InterventionRequest{
-		ID:         uuid.New().String(),
-		SessionID:  sessionID,
-		Type:       itype,
-		Prompt:     prompt,
-		Screenshot: screenshot,
-		CreatedAt:  time.Now().UTC(),
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -187,6 +154,34 @@ func (e *PauseExecutor) Execute(
 	result.Data = []byte(resp.Data)
 	result.Duration = time.Since(start)
 	return result, nil
+}
+
+// buildRequest parses params and prepares the intervention request.
+func (e *PauseExecutor) buildRequest(ctx context.Context, inst domain.BrowserInstance, params map[string]interface{}) (*domain.InterventionRequest, time.Duration, error) {
+	itype, err := stringParam(params, "type")
+	if err != nil {
+		return nil, 0, err
+	}
+	prompt, err := stringParam(params, "prompt")
+	if err != nil {
+		return nil, 0, err
+	}
+
+	sessionID, _ := params["sessionID"].(string)
+	timeout := hitlDefaultTimeout
+	if v, ok := params["timeout"].(time.Duration); ok {
+		timeout = v
+	}
+
+	req := &domain.InterventionRequest{
+		ID:         uuid.New().String(),
+		SessionID:  sessionID,
+		Type:       itype,
+		Prompt:     prompt,
+		Screenshot: takeScreenshotBytes(ctx, inst),
+		CreatedAt:  time.Now().UTC(),
+	}
+	return req, timeout, nil
 }
 
 // takeScreenshotBytes captures a PNG screenshot and returns the raw bytes.

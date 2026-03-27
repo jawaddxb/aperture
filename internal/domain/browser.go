@@ -12,8 +12,9 @@ import (
 type BrowserPool interface {
 	// Acquire returns an available BrowserInstance from the pool.
 	// Blocks up to 10 seconds if the pool is exhausted.
+	// If profileID is provided, the instance will be configured with that profile's data.
 	// Returns ErrPoolExhausted if no instance becomes available in time.
-	Acquire(ctx context.Context) (BrowserInstance, error)
+	Acquire(ctx context.Context, profileID ...string) (BrowserInstance, error)
 
 	// Release returns a BrowserInstance to the pool after clearing its state.
 	// The instance must have been obtained from this pool via Acquire.
@@ -105,4 +106,30 @@ type TabManager interface {
 	// WaitForNewTab waits up to timeout for a new tab to open and returns it.
 	// Returns an error if no new tab appears before timeout.
 	WaitForNewTab(ctx context.Context, timeout time.Duration) (*Tab, error)
+}
+
+// StealthConfig defines settings to avoid bot detection.
+type StealthConfig struct {
+	Enabled       bool
+	UserAgent     string
+	Platform      string
+	Language      string
+	Vendor        string
+	Renderer      string
+	HideWebDriver bool
+}
+
+// Profile represents an isolated browser user data directory.
+type Profile struct {
+	ID      string
+	Path    string
+	Context string // "default", "incognito"
+}
+
+// ProfileManager manages browser profiles.
+type ProfileManager interface {
+	// CreateProfile creates a new profile with the given ID.
+	CreateProfile(ctx context.Context, id string) (*Profile, error)
+	// DeleteProfile removes the profile directory for the given ID.
+	DeleteProfile(ctx context.Context, id string) error
 }

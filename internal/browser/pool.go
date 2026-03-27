@@ -24,68 +24,27 @@ const (
 // It manages N headless Chromium instances, pre-warming them on startup and
 // detecting crashes via a background monitor goroutine.
 type Pool struct {
-	cfg         Config
-	available   chan domain.BrowserInstance // buffered channel acts as the pool queue
-	mu          sync.Mutex                  // guards allInstances
+	cfg          Config
+	available    chan domain.BrowserInstance // buffered channel acts as the pool queue
+	mu           sync.Mutex                  // guards allInstances
 	allInstances []*instance
-	counter     atomic.Int64 // instance ID counter
-	closed      atomic.Bool
-	stopMonitor chan struct{}
-	wg          sync.WaitGroup
-}
-
-// Config holds pool configuration values.
-type Config struct {
-	// PoolSize is the number of pre-warmed Chromium instances to maintain.
-	PoolSize int
-	// ChromiumPath is the absolute path to the Chromium/Chrome executable.
-	ChromiumPath string
-	// SkipPreWarm disables instance pre-warming during NewPool.
-	// Zero value (false) means pre-warm on startup — production default.
-	// Set to true in tests to avoid requiring a real Chromium binary.
-	SkipPreWarm bool
-	// ProxyURL is an optional static proxy server address, e.g. "http://proxy.example.com:8080".
-	ProxyURL string
-	// ProxyProvider is an optional provider to resolve a proxy per session.
-	// If both ProxyURL and ProxyProvider are set, ProxyURL is used as a fallback.
-	ProxyProvider domain.ProxyProvider
-}
-
-// NewPool creates and pre-warms a Pool with cfg.PoolSize Chromium instances.
-// Returns an error if any instance fails to launch.
-func NewPool(cfg Config) (*Pool, error) {
-	if cfg.PoolSize <= 0 {
-		return nil, fmt.Errorf("pool size must be > 0, got %d", cfg.PoolSize)
-	}
-	if cfg.ChromiumPath == "" {
-		return nil, fmt.Errorf("chromium path must not be empty")
-	}
-
-	p := &Pool{
-		cfg:         cfg,
-		available:   make(chan domain.BrowserInstance, cfg.PoolSize),
-		stopMonitor: make(chan struct{}),
-	}
-
-	if !cfg.SkipPreWarm {
-		if err := p.prewarm(); err != nil {
-			_ = p.Close()
-			return nil, err
-		}
-	}
-
-	p.wg.Add(1)
-	go p.monitorCrashes()
-
-	return p, nil
+	counter      atomic.Int64 // instance ID counter
+	closed       atomic.Bool
+	stopMonitor  chan struct{}
+	wg           sync.WaitGroup
 }
 
 // Acquire returns an available BrowserInstance from the pool.
 // Blocks up to 10 seconds if all instances are in use.
-// Returns domain.ErrPoolExhausted if none become available in time.
-func (p *Pool) Acquire(ctx context.Context) (domain.BrowserInstance, error) {
+// If profileID is provided, the instance will be configured with that profile's data.
+func (p *Pool) Acquire(ctx context.Context, profileIDs ...string) (domain.BrowserInstance, error) {
 	if p.closed.Load() {
 		return nil, fmt.Errorf("pool is closed")
+	}
+
+	profileID := ""
+	if len(profileIDs) > 0 {
+		profileID = profileIDs[0]
 	}
 
 	deadline := time.Now().Add(acquireTimeout)
@@ -95,22 +54,46 @@ func (p *Pool) Acquire(ctx context.Context) (domain.BrowserInstance, error) {
 	start := time.Now()
 	select {
 	case inst := <-p.available:
-		// Configure proxy for this instance if provider is set.
-		if p.cfg.ProxyProvider != nil {
-			// sessionID is not currently passed to Acquire, using "default".
-			// In a future phase, Acquire might take sessionID.
-			if err := p.configureProxy(ctx, inst, "default"); err != nil {
-				p.Release(inst)
-				return nil, err
-			}
-		}
-		return inst, nil
+		return p.prepareInstance(ctx, inst, profileID)
 	case <-tctx.Done():
 		return nil, &domain.ErrPoolExhausted{
 			PoolSize: p.cfg.PoolSize,
 			Waited:   time.Since(start),
 		}
 	}
+}
+
+// prepareInstance ensures the acquired instance matches the requested profile and has proxy configured.
+func (p *Pool) prepareInstance(ctx context.Context, inst domain.BrowserInstance, profileID string) (domain.BrowserInstance, error) {
+	conc, _ := inst.(*instance)
+	if conc.profileID != profileID {
+		newInst, err := p.recreateInstanceWithProfile(ctx, conc, profileID)
+		if err != nil {
+			p.available <- inst // put it back
+			return nil, err
+		}
+		inst = newInst
+	}
+
+	if p.cfg.ProxyProvider != nil {
+		if err := p.configureProxy(ctx, inst, profileID); err != nil {
+			p.Release(inst)
+			return nil, err
+		}
+	}
+	return inst, nil
+}
+
+func (p *Pool) recreateInstanceWithProfile(ctx context.Context, old *instance, profileID string) (domain.BrowserInstance, error) {
+	_ = old.Close()
+	p.removeFromAll(old)
+
+	inst, err := p.spawnInstance(profileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to recreate instance with profile %s: %w", profileID, err)
+	}
+
+	return inst, nil
 }
 
 // configureProxy resolves and applies proxy settings to an instance.
@@ -123,9 +106,7 @@ func (p *Pool) configureProxy(ctx context.Context, inst domain.BrowserInstance, 
 		return nil
 	}
 
-	// For authenticated proxies, we need to handle CDP events.
 	if proxy.Username != "" || proxy.Password != "" {
-		// This requires updating the instance to handle authentication.
 		if conc, ok := inst.(*instance); ok {
 			conc.setProxyAuth(proxy.Username, proxy.Password)
 		}
@@ -164,50 +145,10 @@ func (p *Pool) Release(inst domain.BrowserInstance) {
 	p.available <- inst
 }
 
-// Size returns the configured maximum pool size.
-func (p *Pool) Size() int {
-	return p.cfg.PoolSize
-}
-
-// Available returns the number of instances currently waiting in the pool.
-func (p *Pool) Available() int {
-	return len(p.available)
-}
-
-// Close shuts down all instances and the crash monitor.
-// Safe to call multiple times.
-func (p *Pool) Close() error {
-	if p.closed.Swap(true) {
-		return nil
-	}
-
-	close(p.stopMonitor)
-	p.wg.Wait()
-
-	// Drain available channel and close instances.
-	for {
-		select {
-		case inst := <-p.available:
-			_ = inst.Close()
-		default:
-			goto drainDone
-		}
-	}
-drainDone:
-
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	for _, inst := range p.allInstances {
-		_ = inst.Close()
-	}
-	p.allInstances = nil
-	return nil
-}
-
 // prewarm launches cfg.PoolSize instances and places them in the available channel.
 func (p *Pool) prewarm() error {
 	for i := 0; i < p.cfg.PoolSize; i++ {
-		inst, err := p.spawnInstance()
+		inst, err := p.spawnInstance("")
 		if err != nil {
 			return fmt.Errorf("prewarm: failed to launch instance %d: %w", i, err)
 		}
@@ -217,7 +158,7 @@ func (p *Pool) prewarm() error {
 }
 
 // spawnInstance creates a new Chromium instance and registers it with the pool.
-func (p *Pool) spawnInstance() (*instance, error) {
+func (p *Pool) spawnInstance(profileID string) (*instance, error) {
 	id := fmt.Sprintf("chrome-%d", p.counter.Add(1))
 
 	var extra []chromedp.ExecAllocatorOption
@@ -225,10 +166,18 @@ func (p *Pool) spawnInstance() (*instance, error) {
 		extra = append(extra, chromedp.ProxyServer(p.cfg.ProxyURL))
 	}
 
+	if profileID != "" && p.cfg.ProfileManager != nil {
+		profile, err := p.cfg.ProfileManager.CreateProfile(context.Background(), profileID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create profile for instance: %w", err)
+		}
+		extra = append(extra, chromedp.UserDataDir(profile.Path))
+	}
+
 	opts := BuildAllocatorOptions(p.cfg.ChromiumPath, extra...)
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	inst, err := newInstance(allocCtx, allocCancel, id)
+	inst, err := newInstance(allocCtx, allocCancel, id, p.cfg.Stealth, profileID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +186,7 @@ func (p *Pool) spawnInstance() (*instance, error) {
 	p.allInstances = append(p.allInstances, inst)
 	p.mu.Unlock()
 
-	slog.Debug("browser instance spawned", "id", id)
+	slog.Debug("browser instance spawned", "id", id, "profile", profileID)
 	return inst, nil
 }
 
@@ -246,7 +195,7 @@ func (p *Pool) replaceInstance(dead *instance) {
 	_ = dead.Close()
 	p.removeFromAll(dead)
 
-	inst, err := p.spawnInstance()
+	inst, err := p.spawnInstance(dead.profileID)
 	if err != nil {
 		slog.Error("pool: failed to replace crashed instance", "id", dead.ID(), "error", err)
 		return

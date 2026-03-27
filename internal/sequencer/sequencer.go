@@ -15,8 +15,6 @@ type ProgressFunc func(result domain.StepResult)
 
 // DefaultSequencer executes Plan steps in order using a registry of Executors.
 // On failure it consults a RecoveryStrategy (if configured) before aborting.
-// Implements domain.Sequencer conceptually; the interface lives in domain but
-// the concrete type lives here to keep domain free of implementations.
 type DefaultSequencer struct {
 	registry  map[string]domain.Executor
 	recovery  domain.RecoveryStrategy // optional; nil = no recovery
@@ -26,20 +24,9 @@ type DefaultSequencer struct {
 
 // Config holds constructor parameters for DefaultSequencer.
 type Config struct {
-	// Registry maps action names to Executor implementations.
-	// Required.
-	Registry map[string]domain.Executor
-
-	// Recovery is the strategy consulted on step failure.
-	// Optional; nil disables recovery and fails immediately.
-	Recovery domain.RecoveryStrategy
-
-	// Progress is called after each step with its result.
-	// Optional; nil means no progress notifications.
-	Progress ProgressFunc
-
-	// Validator performs pre-flight checks before each step executes.
-	// Optional; nil disables validation.
+	Registry  map[string]domain.Executor
+	Recovery  domain.RecoveryStrategy
+	Progress  ProgressFunc
 	Validator domain.StepValidator
 }
 
@@ -55,7 +42,6 @@ func NewDefaultSequencer(cfg Config) *DefaultSequencer {
 
 // Run executes all steps in plan against inst.
 // It stops on the first unrecoverable failure (unless the step is Optional).
-// ctx controls the overall deadline; individual steps inherit it.
 func (s *DefaultSequencer) Run(ctx context.Context, inst domain.BrowserInstance, plan *domain.Plan) (*domain.RunResult, error) {
 	start := time.Now()
 	result := &domain.RunResult{
@@ -94,17 +80,9 @@ func (s *DefaultSequencer) runStep(
 ) (domain.StepResult, bool) {
 	start := time.Now()
 
-	// Pre-flight validation (if configured).
 	if s.validator != nil {
-		vr, vErr := s.validator.Validate(ctx, step, nil)
-		if vErr != nil {
-			ar := &domain.ActionResult{Action: step.Action, Success: false, Error: vErr.Error()}
-			return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, !step.Optional
-		}
-		if !vr.Valid {
-			msg := fmt.Sprintf("validation failed: %v", vr.Errors)
-			ar := &domain.ActionResult{Action: step.Action, Success: false, Error: msg}
-			return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, !step.Optional
+		if stop, res := s.validateStep(ctx, step, idx, start); stop {
+			return res, true
 		}
 	}
 
@@ -113,40 +91,67 @@ func (s *DefaultSequencer) runStep(
 		return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, false
 	}
 
-	// Determine the error for recovery.
+	if s.recovery != nil {
+		if ok, res := s.tryRecover(ctx, inst, step, ar, execErr, idx, start); ok {
+			return res, false
+		}
+	}
+
+	return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, !step.Optional
+}
+
+func (s *DefaultSequencer) validateStep(ctx context.Context, step domain.Step, idx int, start time.Time) (bool, domain.StepResult) {
+	vr, vErr := s.validator.Validate(ctx, step, nil)
+	if vErr != nil || !vr.Valid {
+		msg := "validation failed"
+		if vErr != nil {
+			msg = vErr.Error()
+		} else if len(vr.Errors) > 0 {
+			msg = fmt.Sprintf("validation failed: %v", vr.Errors)
+		}
+		ar := &domain.ActionResult{Action: step.Action, Success: false, Error: msg}
+		return !step.Optional, domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}
+	}
+	return false, domain.StepResult{}
+}
+
+func (s *DefaultSequencer) tryRecover(
+	ctx context.Context,
+	inst domain.BrowserInstance,
+	step domain.Step,
+	ar *domain.ActionResult,
+	execErr error,
+	idx int,
+	start time.Time,
+) (bool, domain.StepResult) {
 	err := execErr
 	if err == nil {
 		err = fmt.Errorf("%s", ar.Error)
 	}
 
-	// Attempt recovery if strategy is configured.
-	if s.recovery != nil {
-		pageState := pageStateFromResult(ar)
-		action, recoveryErr := s.recovery.Recover(ctx, step, err, pageState)
-		if recoveryErr == nil && action != nil {
-			updatedStep, recovered := s.applyRecovery(ctx, inst, step, action, idx)
-			if recovered {
-				return domain.StepResult{Step: updatedStep, Result: &domain.ActionResult{Action: step.Action, Success: true}, Index: idx, Duration: time.Since(start)}, false
+	pageState := pageStateFromResult(ar)
+	action, recoveryErr := s.recovery.Recover(ctx, step, err, pageState)
+	if recoveryErr == nil && action != nil {
+		updatedStep, recovered := s.applyRecovery(ctx, inst, step, action, idx)
+		if recovered {
+			res := domain.StepResult{
+				Step:     updatedStep,
+				Result:   &domain.ActionResult{Action: step.Action, Success: true},
+				Index:    idx,
+				Duration: time.Since(start),
 			}
+			return true, res
 		}
 	}
-
-	// No recovery succeeded.
-	if step.Optional {
-		return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, false
-	}
-	return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, true
+	return false, domain.StepResult{}
 }
 
 // executeStep dispatches a step to its executor.
 func (s *DefaultSequencer) executeStep(ctx context.Context, inst domain.BrowserInstance, step domain.Step) (*domain.ActionResult, error) {
 	exec, ok := s.registry[step.Action]
 	if !ok {
-		return &domain.ActionResult{
-			Action:  step.Action,
-			Success: false,
-			Error:   fmt.Sprintf("no executor registered for action %q", step.Action),
-		}, fmt.Errorf("no executor for action %q", step.Action)
+		msg := fmt.Sprintf("no executor registered for action %q", step.Action)
+		return &domain.ActionResult{Action: step.Action, Success: false, Error: msg}, fmt.Errorf("%s", msg)
 	}
 	return exec.Execute(ctx, inst, step.Params)
 }
@@ -162,10 +167,7 @@ func (s *DefaultSequencer) applyRecovery(
 	switch action.Strategy {
 	case "retry", "screenshot_and_retry":
 		ar, err := s.executeStep(ctx, inst, step)
-		if err == nil && ar.Success {
-			return step, true
-		}
-		return step, false
+		return step, err == nil && ar.Success
 
 	case "replan":
 		for _, newStep := range action.NewSteps {
@@ -191,8 +193,3 @@ func pageStateFromResult(ar *domain.ActionResult) *domain.PageState {
 	}
 	return ar.PageState
 }
-
-// compile-time interface check — DefaultSequencer satisfies domain.Sequencer.
-var _ interface {
-	Run(ctx context.Context, inst domain.BrowserInstance, plan *domain.Plan) (*domain.RunResult, error)
-} = (*DefaultSequencer)(nil)

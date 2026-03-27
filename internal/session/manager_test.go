@@ -33,7 +33,7 @@ func newStubPool(size int) *stubPool {
 	return &stubPool{size: size}
 }
 
-func (p *stubPool) Acquire(_ context.Context) (domain.BrowserInstance, error) {
+func (p *stubPool) Acquire(_ context.Context, _ ...string) (domain.BrowserInstance, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.counter++

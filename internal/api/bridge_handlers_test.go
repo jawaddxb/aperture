@@ -68,8 +68,10 @@ func (b *stubBridge) CancelTask(_ context.Context, taskID string) error {
 
 type stubPool struct{ available int }
 
-func (p *stubPool) Acquire(_ context.Context) (domain.BrowserInstance, error) { return nil, nil }
-func (p *stubPool) Release(_ domain.BrowserInstance)                           {}
+func (p *stubPool) Acquire(_ context.Context, _ ...string) (domain.BrowserInstance, error) {
+	return nil, nil
+}
+func (p *stubPool) Release(_ domain.BrowserInstance) {}
 func (p *stubPool) Size() int                                                  { return 5 }
 func (p *stubPool) Available() int                                             { return p.available }
 func (p *stubPool) Close() error                                               { return nil }
