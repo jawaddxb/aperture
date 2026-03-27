@@ -136,6 +136,14 @@ type StealthConfig struct {
 	Vendor        string
 	Renderer      string
 	HideWebDriver bool
+	// v1.1 stealth fields
+	CanvasNoise  bool    // Inject ±1 RGB noise on canvas toDataURL/getImageData
+	BlockWebRTC  bool    // Neuter RTCPeerConnection to prevent IP leaks
+	RandomView   bool    // Randomize viewport to common resolutions
+	MockPlugins  bool    // Realistic Chrome plugin list + chrome.runtime
+	Timezone     string  // IANA timezone, e.g. "America/New_York"
+	GeoLatitude  float64 // Geolocation latitude override
+	GeoLongitude float64 // Geolocation longitude override
 }
 
 // Profile represents an isolated browser user data directory.

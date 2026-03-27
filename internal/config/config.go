@@ -75,6 +75,19 @@ type BridgeConfig struct {
 	TaskTimeoutSeconds int `mapstructure:"task_timeout_seconds"`
 }
 
+// StealthYAML holds YAML-mapped stealth settings.
+type StealthYAML struct {
+	Enabled        bool    `mapstructure:"enabled"`
+	HideWebDriver  bool    `mapstructure:"hide_webdriver"`
+	CanvasNoise    bool    `mapstructure:"canvas_noise"`
+	BlockWebRTC    bool    `mapstructure:"block_webrtc"`
+	RandomViewport bool    `mapstructure:"random_viewport"`
+	MockPlugins    bool    `mapstructure:"mock_plugins"`
+	Timezone       string  `mapstructure:"timezone"`
+	GeoLatitude    float64 `mapstructure:"geo_latitude"`
+	GeoLongitude   float64 `mapstructure:"geo_longitude"`
+}
+
 // Config is the root application configuration struct.
 // It is validated on startup and passed to constructors via dependency injection.
 type Config struct {
@@ -86,6 +99,7 @@ type Config struct {
 	API     APIConfig     `mapstructure:"api"`
 	LLM     LLMConfig     `mapstructure:"llm"`
 	Bridge  BridgeConfig  `mapstructure:"bridge"`
+	Stealth StealthYAML   `mapstructure:"stealth"`
 }
 
 // Load reads configuration from aperture.yaml and APERTURE_* environment variables.
@@ -142,6 +156,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("llm.model", "gpt-4o")
 	v.SetDefault("bridge.max_concurrent_tasks", 10)
 	v.SetDefault("bridge.task_timeout_seconds", 120)
+	v.SetDefault("stealth.enabled", true)
+	v.SetDefault("stealth.hide_webdriver", true)
+	v.SetDefault("stealth.canvas_noise", true)
+	v.SetDefault("stealth.block_webrtc", true)
+	v.SetDefault("stealth.random_viewport", true)
+	v.SetDefault("stealth.mock_plugins", true)
 }
 
 // validate checks that required fields are present.

@@ -6,20 +6,24 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// DefaultLaunchFlags returns the recommended headless Chromium launch flags.
-// These flags optimise for security and stability in container/server environments.
+// DefaultLaunchFlags returns hardened headless Chromium launch flags.
+// These flags optimise for stealth, security, and stability.
 func DefaultLaunchFlags() []chromedp.ExecAllocatorOption {
 	return []chromedp.ExecAllocatorOption{
-		chromedp.Flag("headless", "new"),
+		chromedp.Flag("headless", "new"), // new headless = identical TLS to headed Chrome
 		chromedp.Flag("no-sandbox", true),
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
-		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-background-networking", true),
 		chromedp.Flag("disable-sync", true),
 		chromedp.Flag("disable-translate", true),
 		chromedp.Flag("mute-audio", true),
 		chromedp.Flag("safebrowsing-disable-auto-update", true),
+		// Anti-detection flags
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.Flag("disable-webrtc-hw-decoding", true),
+		chromedp.Flag("enforce-webrtc-ip-permission-check", true),
+		chromedp.Flag("disable-features", "WebRtcHideLocalIpsWithMdns"),
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 	}
