@@ -93,7 +93,7 @@ export class ApertureClient {
       '/api/v1/actions/screenshot',
       {
         url: params.url,
-        full_page: params.full_page ?? false,
+        fullPage: params.full_page ?? false,
       },
     );
     return {

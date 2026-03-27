@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aperture — The trust layer for agent actions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   APERTURE DESIGN TOKENS
+   ============================================================ */
+:root {
+  /* Brand */
+  --copper: #C2622A;
+  --copper-light: #D4875A;
+  --copper-dim: #8B4420;
+  --copper-bg: #F5EDE6;
+
+  /* Ink */
+  --ink: #1A1A18;
+  --ink-secondary: #4A4A45;
+  --ink-muted: #8A8A82;
+
+  /* Surfaces */
+  --surface: #FAFAF7;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #F0F0EB;
+
+  /* Borders */
+  --border: #E0E0D8;
+  --border-strong: #C8C8C0;
+
+  /* Semantic */
+  --success: #2E7D4F;
+  --success-bg: #EBF5EF;
+  --error: #B8372A;
+  --error-bg: #F8ECEA;
+
+  /* Typography */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  /* Radius */
+  --radius: 2px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(26,26,24,0.05);
+  --shadow-base: 0 1px 3px rgba(26,26,24,0.08), 0 1px 2px rgba(26,26,24,0.04);
+  --shadow-lg: 0 4px 12px rgba(26,26,24,0.08), 0 2px 4px rgba(26,26,24,0.04);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 350ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--surface);
+  line-height: 1.6;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--copper);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-3);
+}
+
+.section-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: var(--space-4);
+}
+
+.section-desc {
+  font-size: 18px;
+  color: var(--ink-secondary);
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+.mono { font-family: var(--font-mono); }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  border-radius: var(--radius);
+}
+
+.btn-primary {
+  background: var(--copper);
+  color: #fff;
+  padding: 12px 24px;
+}
+.btn-primary:hover { background: var(--copper-light); }
+.btn-primary:active { background: var(--copper-dim); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  padding: 12px 24px;
+  border: 1px solid var(--border-strong);
+}
+.btn-secondary:hover { background: var(--surface-sunken); border-color: var(--ink-muted); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--copper);
+  padding: 8px 0;
+}
+.btn-ghost:hover { color: var(--copper-light); }
+.btn-ghost span { transition: transform var(--duration-fast) var(--ease-out); display: inline-block; }
+.btn-ghost:hover span { transform: translateX(3px); }
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(250,250,247,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duration-base);
+  height: 64px;
+}
+.nav.scrolled { border-bottom-color: var(--border); }
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  gap: var(--space-7);
+}
+
+.nav-logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.nav-logo svg { width: 28px; height: 28px; }
+
+.nav-links {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+  transition: color var(--duration-fast);
+}
+.nav-links a:hover { color: var(--ink); }
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.nav-mobile { display: none; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  padding: var(--space-10) 0 var(--space-9);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.hero-content { padding-top: var(--space-6); }
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: var(--space-5);
+}
+
+.hero h1 .accent { color: var(--copper); }
+
+.hero-sub {
+  font-size: 19px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-6);
+  max-width: 480px;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-7);
+}
+
+.hero-metrics {
+  display: flex;
+  gap: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.hero-metric-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: var(--space-1);
+}
+
+.hero-metric-label {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Hero code block */
+.hero-code {
+  background: var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.hero-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.hero-code-dots {
+  display: flex;
+  gap: 6px;
+}
+.hero-code-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+}
+
+.hero-code-lang {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+
+.hero-code pre {
+  padding: 24px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.75);
+}
+
+.hero-code .kw { color: #E8A87C; }
+.hero-code .fn { color: #D4875A; }
+.hero-code .str { color: #A8B89C; }
+.hero-code .cm { color: rgba(255,255,255,0.3); }
+.hero-code .num { color: #E8A87C; }
+
+/* ============================================================
+   PROBLEM
+   ============================================================ */
+.problem {
+  padding: var(--space-10) 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: var(--space-8);
+}
+
+.problem-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.problem-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  transition: border-color var(--duration-base);
+}
+.problem-card:hover { border-color: var(--border-strong); }
+
+.problem-card-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--copper);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-2);
+}
+
+.problem-card h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+}
+
+.problem-card p {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   HOW IT WORKS (4-Layer Stack)
+   ============================================================ */
+.how-it-works {
+  padding: var(--space-10) 0;
+}
+
+.stack-layers {
+  margin-top: var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stack-layer {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-raised);
+  transition: background var(--duration-base);
+}
+.stack-layer:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.stack-layer:last-child { border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+
+.stack-layer:hover { background: var(--surface-sunken); }
+
+.stack-layer.highlight {
+  background: var(--copper-bg);
+  border-color: var(--copper-light);
+}
+.stack-layer.highlight + .stack-layer { border-top-color: var(--copper-light); }
+.stack-layer.highlight:hover { background: #F0E4D9; }
+
+.stack-layer-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  padding-top: 2px;
+}
+
+.stack-layer.highlight .stack-layer-name { color: var(--copper-dim); }
+
+.stack-layer-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  margin-bottom: var(--space-1);
+}
+
+.stack-layer-desc {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+
+.stack-layer-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  margin-left: var(--space-3);
+  vertical-align: middle;
+}
+
+.tag-us {
+  background: var(--copper-bg);
+  color: var(--copper-dim);
+}
+
+.tag-them {
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+}
+
+/* ============================================================
+   COMPARISON TABLE
+   ============================================================ */
+.comparison {
+  padding: var(--space-10) 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-7);
+  font-size: 14px;
+}
+
+.comparison-table thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border-strong);
+  background: var(--surface-sunken);
+}
+
+.comparison-table thead th:last-child {
+  color: var(--copper-dim);
+  background: var(--copper-bg);
+}
+
+.comparison-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-secondary);
+  vertical-align: top;
+}
+
+.comparison-table tbody td:first-child {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.comparison-table tbody td:last-child {
+  color: var(--ink);
+  font-weight: 500;
+  background: rgba(194,98,42,0.04);
+  border-left: 2px solid var(--copper);
+}
+
+.comparison-table tbody tr:hover td { background: rgba(0,0,0,0.015); }
+.comparison-table tbody tr:hover td:last-child { background: rgba(194,98,42,0.07); }
+
+.check { color: var(--success); font-weight: 700; }
+.cross { color: var(--ink-muted); }
+
+/* ============================================================
+   xBPP
+   ============================================================ */
+.xbpp {
+  padding: var(--space-10) 0;
+}
+
+.xbpp-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: var(--space-8);
+  margin-top: var(--space-7);
+  align-items: start;
+}
+
+.xbpp-question {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: var(--space-5);
+}
+
+.xbpp-question em {
+  font-style: normal;
+  color: var(--copper);
+}
+
+.xbpp-answer {
+  font-size: 16px;
+  color: var(--ink-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-6);
+}
+
+.xbpp-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.xbpp-check {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: var(--space-3);
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  font-size: 13px;
+  align-items: center;
+  background: var(--surface-raised);
+}
+.xbpp-check:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.xbpp-check:last-child { border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+
+.xbpp-check-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.xbpp-check-name {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.xbpp-latency {
+  margin-top: var(--space-5);
+  display: flex;
+  gap: var(--space-6);
+}
+
+.xbpp-latency-item {
+  text-align: left;
+}
+
+.xbpp-latency-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--ink);
+}
+
+.xbpp-latency-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* ============================================================
+   SITE PROFILES
+   ============================================================ */
+.profiles {
+  padding: var(--space-10) 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.profiles-grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: var(--space-8);
+  margin-top: var(--space-7);
+  align-items: start;
+}
+
+.profiles-json {
+  background: var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.profiles-json-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  display: flex;
+  justify-content: space-between;
+}
+
+.profiles-json pre {
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.7);
+  overflow-x: auto;
+}
+
+.profiles-json .key { color: #D4875A; }
+.profiles-json .str { color: #A8B89C; }
+.profiles-json .num { color: #E8A87C; }
+.profiles-json .bool { color: #8BB0C4; }
+
+.profiles-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+}
+
+.profiles-feature {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: var(--space-3);
+}
+
+.profiles-feature-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--copper-bg);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.profiles-feature h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.profiles-feature p {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   PRICING
+   ============================================================ */
+.pricing {
+  padding: var(--space-10) 0;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+}
+
+.pricing-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-card.featured {
+  border-color: var(--copper);
+  box-shadow: 0 0 0 1px var(--copper);
+  position: relative;
+}
+
+.pricing-featured-tag {
+  position: absolute;
+  top: -1px;
+  right: var(--space-5);
+  background: var(--copper);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.pricing-tier {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+  margin-bottom: var(--space-1);
+}
+
+.pricing-price {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 36px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: var(--space-1);
+}
+
+.pricing-price .period {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.pricing-credits {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.pricing-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+  margin-bottom: var(--space-6);
+}
+
+.pricing-features li {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.pricing-features li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--ink-muted);
+}
+
+.pricing-card .btn { width: 100%; justify-content: center; }
+
+/* ============================================================
+   SDK
+   ============================================================ */
+.sdk {
+  padding: var(--space-10) 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.sdk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+}
+
+.sdk-block {
+  background: var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.sdk-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sdk-block-lang {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+}
+
+.sdk-block-install {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+}
+
+.sdk-block pre {
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.7);
+  overflow-x: auto;
+}
+
+.sdk-block .kw { color: #E8A87C; }
+.sdk-block .fn { color: #D4875A; }
+.sdk-block .str { color: #A8B89C; }
+.sdk-block .cm { color: rgba(255,255,255,0.3); }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  padding: var(--space-8) 0 var(--space-7);
+  border-top: 1px solid var(--border);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr 2fr 2fr;
+  gap: var(--space-7);
+}
+
+.footer-brand {
+  max-width: 280px;
+}
+
+.footer-logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-4);
+}
+
+.footer-logo svg { width: 22px; height: 22px; }
+
+.footer-tagline {
+  font-size: 14px;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+.footer-col h4 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: var(--space-4);
+}
+
+.footer-col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  transition: color var(--duration-fast);
+}
+.footer-col a:hover { color: var(--copper); }
+
+.footer-bottom {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-copy {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.footer-legal {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.footer-legal a {
+  font-size: 13px;
+  color: var(--ink-muted);
+  transition: color var(--duration-fast);
+}
+.footer-legal a:hover { color: var(--ink-secondary); }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--duration-slow) var(--ease-out), transform var(--duration-slow) var(--ease-out);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children */
+.stagger > .reveal:nth-child(1) { transition-delay: 0ms; }
+.stagger > .reveal:nth-child(2) { transition-delay: 80ms; }
+.stagger > .reveal:nth-child(3) { transition-delay: 160ms; }
+.stagger > .reveal:nth-child(4) { transition-delay: 240ms; }
+.stagger > .reveal:nth-child(5) { transition-delay: 320ms; }
+.stagger > .reveal:nth-child(6) { transition-delay: 400ms; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .hero-grid { grid-template-columns: 1fr; gap: var(--space-7); }
+  .hero h1 { font-size: 44px; }
+  .problem-grid { grid-template-columns: 1fr; }
+  .xbpp-grid { grid-template-columns: 1fr; }
+  .profiles-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+  .sdk-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .section-heading { font-size: 32px; }
+  .hero h1 { font-size: 36px; }
+  .hero { padding: var(--space-8) 0 var(--space-7); }
+  .problem, .how-it-works, .comparison, .xbpp, .profiles, .pricing, .sdk {
+    padding: var(--space-8) 0;
+  }
+  .hero-metrics { flex-direction: column; gap: var(--space-4); }
+  .hero-ctas { flex-direction: column; }
+  .hero-ctas .btn { width: 100%; justify-content: center; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .comparison-table { font-size: 12px; }
+  .comparison-table thead th, .comparison-table tbody td { padding: 10px 8px; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; gap: var(--space-3); }
+  .nav-links { display: none; }
+  .nav-mobile { display: block; }
+  .xbpp-question { font-size: 26px; }
+  .stack-layer { grid-template-columns: 1fr; gap: var(--space-2); }
+  .stack-layer-name { font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  .hero h1 { font-size: 30px; }
+  .section-heading { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="#" class="nav-logo">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="14" cy="14" r="13" stroke="#C2622A" stroke-width="1.5" fill="none"/>
+        <path d="M14 5.5L17.5 10.5H21.5L18 14L21.5 17.5H17.5L14 22.5L10.5 17.5H6.5L10 14L6.5 10.5H10.5L14 5.5Z" stroke="#C2622A" stroke-width="1.3" fill="none" stroke-linejoin="round"/>
+        <circle cx="14" cy="14" r="3.5" stroke="#C2622A" stroke-width="1.3" fill="none"/>
+      </svg>
+      aperture
+    </a>
+    <ul class="nav-links">
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#sdk">SDK</a></li>
+      <li><a href="https://docs.aperture.dev">Docs</a></li>
+    </ul>
+    <div class="nav-right" style="display: flex; align-items: center; gap: 24px;">
+      <div id="status-indicator" style="display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted);">
+        <span id="status-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #ccc;"></span>
+        <span id="status-text">Checking system...</span>
+      </div>
+      <a href="#" style="font-size:14px;font-weight:500;color:var(--ink-secondary);">Sign in</a>
+      <a href="#" class="btn btn-primary" style="padding:8px 18px;font-size:14px;">Get API Key</a>
+    </div>
+    <button class="nav-mobile" onclick="document.querySelector('.nav-links').classList.toggle('show')" style="background:none;border:none;cursor:pointer;padding:8px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content">
+        <div class="label">Agent Infrastructure</div>
+        <h1>The trust layer for <span class="accent">agent actions</span></h1>
+        <p class="hero-sub">Every action policy-checked. Every result structured. Aperture is the governed runtime between AI agents and the web.</p>
+        <div class="hero-ctas">
+          <a href="#" class="btn btn-primary">Get Started Free</a>
+          <a href="#" class="btn btn-secondary">Read the Docs</a>
+        </div>
+        <div class="hero-metrics">
+          <div>
+            <div class="hero-metric-value">&lt;10ms</div>
+            <div class="hero-metric-label">Policy check latency</div>
+          </div>
+          <div>
+            <div class="hero-metric-value">98.2%</div>
+            <div class="hero-metric-label">Element resolution accuracy</div>
+          </div>
+          <div>
+            <div class="hero-metric-value">5 lines</div>
+            <div class="hero-metric-label">To ship a governed agent</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-code">
+        <div class="hero-code-header">
+          <div class="hero-code-dots"><span></span><span></span><span></span></div>
+          <span class="hero-code-lang">TypeScript</span>
+        </div>
+<pre><span class="kw">import</span> { Aperture } <span class="kw">from</span> <span class="str">'@aperture/sdk'</span>;
+
+<span class="kw">const</span> session = <span class="kw">await</span> aperture.session.<span class="fn">create</span>({
+  agentId: <span class="str">'shopping-agent'</span>,
+  domains: [<span class="str">'*.amazon.com'</span>],
+  budget: <span class="num">500</span>,
+});
+
+<span class="cm">// Navigate — structured data back instantly</span>
+<span class="kw">const</span> page = <span class="kw">await</span> session.<span class="fn">navigate</span>(
+  <span class="str">'https://amazon.com/dp/B0EXAMPLE'</span>
+);
+
+console.<span class="fn">log</span>(page.structured_data.price);
+<span class="cm">// → 348.00 (typed, not scraped)</span>
+
+<span class="kw">await</span> session.<span class="fn">click</span>(<span class="str">'Add to Cart'</span>);
+<span class="cm">// → policy-checked, audited, structured</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     THE PROBLEM
+     ============================================================ -->
+<section class="problem">
+  <div class="container">
+    <div class="problem-grid">
+      <div>
+        <div class="label">The Problem</div>
+        <h2 class="section-heading">Agents can browse the web. Should&nbsp;they?</h2>
+        <p class="section-desc">Every production agent team hits the same wall — not technical, but trust. The CISO asks: "What can this agent do? Who's liable?" Nobody has an answer.</p>
+      </div>
+      <div class="problem-cards stagger">
+        <div class="problem-card reveal">
+          <div class="problem-card-num">Problem 01</div>
+          <h3>Token waste on raw HTML</h3>
+          <p>Agents consume thousands of tokens parsing DOM soup. Your LLM reads &lt;div class="a-price a-text-price"&gt; when it should read <strong>$348.00</strong>. You're paying for HTML, not intelligence.</p>
+        </div>
+        <div class="problem-card reveal">
+          <div class="problem-card-num">Problem 02</div>
+          <h3>Zero governance</h3>
+          <p>Can this agent wire money? Accept terms of service? Access unapproved domains? With Browserbase and Playwright, the answer is "whatever the agent decides." That's not a production answer.</p>
+        </div>
+        <div class="problem-card reveal">
+          <div class="problem-card-num">Problem 03</div>
+          <h3>Brittle selectors break everything</h3>
+          <p>CSS selectors are a liability. Amazon changes a class name, your agent breaks. Your team spends 60% of engineering time maintaining selectors instead of building product.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     HOW IT WORKS
+     ============================================================ -->
+<section class="how-it-works" id="how-it-works">
+  <div class="container">
+    <div class="label">Architecture</div>
+    <h2 class="section-heading">The 4-layer stack</h2>
+    <p class="section-desc">The agent decides what to do. Aperture executes, governs, and attests. We are hands, not brain.</p>
+
+    <div class="stack-layers">
+      <div class="stack-layer reveal">
+        <div class="stack-layer-name">Layer 1</div>
+        <div>
+          <div class="stack-layer-title">Agent Brain <span class="stack-layer-tag tag-them">Not us</span></div>
+          <div class="stack-layer-desc">Claude, GPT, Gemini, or your custom model. Decides what to do. Not our problem.</div>
+        </div>
+      </div>
+      <div class="stack-layer highlight reveal">
+        <div class="stack-layer-name">Layer 2</div>
+        <div>
+          <div class="stack-layer-title">Aperture Runtime <span class="stack-layer-tag tag-us">← We are here</span></div>
+          <div class="stack-layer-desc">Resolves targets, executes actions, enforces policy via xBPP, returns structured output with full audit trail.</div>
+        </div>
+      </div>
+      <div class="stack-layer highlight reveal">
+        <div class="stack-layer-name">Layer 3</div>
+        <div>
+          <div class="stack-layer-title">Site Profiles <span class="stack-layer-tag tag-us">← We are here</span></div>
+          <div class="stack-layer-desc">Domain-specific intelligence. Every website becomes a typed API. The agent never sees HTML.</div>
+        </div>
+      </div>
+      <div class="stack-layer reveal">
+        <div class="stack-layer-name">Layer 4</div>
+        <div>
+          <div class="stack-layer-title">The Web <span class="stack-layer-tag tag-them">Not our fault</span></div>
+          <div class="stack-layer-desc">Messy. Inconsistent. Adversarial. We handle the chaos so agents don't have to.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     COMPARISON TABLE
+     ============================================================ -->
+<section class="comparison">
+  <div class="container">
+    <div class="label">Comparison</div>
+    <h2 class="section-heading">Not another browser tool</h2>
+    <p class="section-desc">Browserbase gives you a browser. Playwright gives you a library. Aperture gives you a governed runtime.</p>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th style="width:22%">Dimension</th>
+          <th style="width:22%">Browserbase</th>
+          <th style="width:22%">Playwright</th>
+          <th style="width:34%">Aperture</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Core primitive</td>
+          <td>Browser hours</td>
+          <td>Browser contexts</td>
+          <td>Agent sessions</td>
+        </tr>
+        <tr>
+          <td>Input</td>
+          <td>CDP commands</td>
+          <td>CSS selectors / XPath</td>
+          <td>Semantic actions — <code class="mono" style="font-size:12px;color:var(--copper);">"Add to Cart"</code></td>
+        </tr>
+        <tr>
+          <td>Output</td>
+          <td>Screenshots / DOM</td>
+          <td>DOM / screenshots</td>
+          <td>Typed JSON with schema validation</td>
+        </tr>
+        <tr>
+          <td>Page understanding</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td>Site Profiles → structured data</td>
+        </tr>
+        <tr>
+          <td>Policy engine</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td>xBPP — 12-check governance</td>
+        </tr>
+        <tr>
+          <td>Auth management</td>
+          <td class="cross">None</td>
+          <td class="cross">Manual</td>
+          <td>3-tier managed auth</td>
+        </tr>
+        <tr>
+          <td>Audit trail</td>
+          <td>Basic logs</td>
+          <td class="cross">None</td>
+          <td>Full telemetry + verification</td>
+        </tr>
+        <tr>
+          <td>Typical code</td>
+          <td>50+ lines / task</td>
+          <td>40+ lines / task</td>
+          <td><strong>5–10 lines / task</strong></td>
+        </tr>
+        <tr>
+          <td>Billing</td>
+          <td>~$0.10/min</td>
+          <td>Free + infra</td>
+          <td>$0.001–0.005 / action</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================
+     xBPP
+     ============================================================ -->
+<section class="xbpp">
+  <div class="container">
+    <div class="label">Governance</div>
+    <div class="xbpp-grid">
+      <div>
+        <div class="xbpp-question">Would you let an AI agent buy things with your <em>company credit card?</em></div>
+        <p class="xbpp-answer">No? That's because every other tool lets agents do anything. Aperture is the only runtime where every action is policy-checked before execution. Enterprise compliance teams say yes. CISOs stop blocking agent adoption.</p>
+        <p class="xbpp-answer">xBPP — Cross-platform Behavior Policy Protocol. 12 checks on every action. Non-negotiable. Non-bypassable. No LLM in the policy path.</p>
+        <div class="xbpp-latency">
+          <div class="xbpp-latency-item">
+            <div class="xbpp-latency-value">&lt;10ms</div>
+            <div class="xbpp-latency-label">Cached policy check</div>
+          </div>
+          <div class="xbpp-latency-item">
+            <div class="xbpp-latency-value">&lt;50ms</div>
+            <div class="xbpp-latency-label">Cold policy check</div>
+          </div>
+          <div class="xbpp-latency-item">
+            <div class="xbpp-latency-value">0</div>
+            <div class="xbpp-latency-label">LLM tokens used</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="xbpp-checks stagger">
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">01</span><span class="xbpp-check-name">Domain allowlist</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">02</span><span class="xbpp-check-name">Action type allowlist</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">03</span><span class="xbpp-check-name">Content classification</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">04</span><span class="xbpp-check-name">Budget check</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">05</span><span class="xbpp-check-name">Rate limiting</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">06</span><span class="xbpp-check-name">Data exfiltration check</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">07</span><span class="xbpp-check-name">Transaction detection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">08</span><span class="xbpp-check-name">Authentication boundary</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">09</span><span class="xbpp-check-name">Scope check</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">10</span><span class="xbpp-check-name">Reputation check</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">11</span><span class="xbpp-check-name">Operator override</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">12</span><span class="xbpp-check-name">Escalation rules</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SITE PROFILES
+     ============================================================ -->
+<section class="profiles">
+  <div class="container">
+    <div class="label">Site Profiles</div>
+    <h2 class="section-heading">Every website becomes a typed&nbsp;API</h2>
+    <p class="section-desc">The agent doesn't see the page. The agent sees structured data. Site Profiles translate the messy web into standardized schemas.</p>
+
+    <div class="profiles-grid">
+      <div>
+        <div class="profiles-features">
+          <div class="profiles-feature">
+            <div class="profiles-feature-icon">◎</div>
+            <div>
+              <h4>Structured, not scraped</h4>
+              <p>Price is a number, not a string inside a div inside a span. Typed data from the first API call.</p>
+            </div>
+          </div>
+          <div class="profiles-feature">
+            <div class="profiles-feature-icon">⚡</div>
+            <div>
+              <h4>Actions, not selectors</h4>
+              <p>"Add to Cart" resolves to the right button on every Shopify store, every Amazon page. No CSS selectors to maintain.</p>
+            </div>
+          </div>
+          <div class="profiles-feature">
+            <div class="profiles-feature-icon">↻</div>
+            <div>
+              <h4>Self-healing</h4>
+              <p>When Amazon changes their DOM, we catch it within hours. Automated testing against live sites daily.</p>
+            </div>
+          </div>
+          <div class="profiles-feature">
+            <div class="profiles-feature-icon">∞</div>
+            <div>
+              <h4>Network effect</h4>
+              <p>Every interaction through Aperture improves profile accuracy for all users. The moat compounds.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="profiles-json">
+        <div class="profiles-json-header">
+          <span>amazon.com — product_detail</span>
+          <span>Site Profile response</span>
+        </div>
+<pre>{
+  <span class="key">"page_type"</span>: <span class="str">"product_detail"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"title"</span>: <span class="str">"Sony WH-1000XM5"</span>,
+    <span class="key">"price"</span>: <span class="num">348.00</span>,
+    <span class="key">"currency"</span>: <span class="str">"USD"</span>,
+    <span class="key">"rating"</span>: <span class="num">4.6</span>,
+    <span class="key">"review_count"</span>: <span class="num">12847</span>,
+    <span class="key">"availability"</span>: <span class="str">"in_stock"</span>,
+    <span class="key">"delivery"</span>: <span class="str">"Tomorrow, Mar 27"</span>
+  },
+  <span class="key">"actions"</span>: {
+    <span class="key">"add_to_cart"</span>: {
+      <span class="key">"confidence"</span>: <span class="num">0.98</span>
+    },
+    <span class="key">"buy_now"</span>: {
+      <span class="key">"confidence"</span>: <span class="num">0.97</span>
+    }
+  },
+  <span class="key">"profile_matched"</span>: <span class="bool">true</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PRICING
+     ============================================================ -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="label">Pricing</div>
+    <h2 class="section-heading">Pay per action, not per hour</h2>
+    <p class="section-desc">Fast agents cost less. Per-action billing aligns cost with value. No idle browser charges.</p>
+
+    <div class="pricing-grid">
+      <!-- Hacker -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Hacker</div>
+        <div class="pricing-price">$0 <span class="period">/ mo</span></div>
+        <div class="pricing-credits">10,000 credits included</div>
+        <ul class="pricing-features">
+          <li>Core API access</li>
+          <li>1 agent</li>
+          <li>5 concurrent sessions</li>
+          <li>Local audit log</li>
+          <li>Community support</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Start Building</a>
+      </div>
+
+      <!-- Builder -->
+      <div class="pricing-card featured">
+        <div class="pricing-featured-tag">Popular</div>
+        <div class="pricing-tier">Builder</div>
+        <div class="pricing-price">$49 <span class="period">/ mo</span></div>
+        <div class="pricing-credits">100,000 credits · $0.0008 overage</div>
+        <ul class="pricing-features">
+          <li>Full API + Site Profiles</li>
+          <li>10 agents</li>
+          <li>25 concurrent sessions</li>
+          <li>Credential Vault</li>
+          <li>Memory persistence</li>
+          <li>Email support (48h)</li>
+        </ul>
+        <a href="#" class="btn btn-primary">Get API Key</a>
+      </div>
+
+      <!-- Scale -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Scale</div>
+        <div class="pricing-price">$299 <span class="period">/ mo</span></div>
+        <div class="pricing-credits">1,000,000 credits · $0.0005 overage</div>
+        <ul class="pricing-features">
+          <li>Everything in Builder</li>
+          <li>Unlimited agents</li>
+          <li>100 concurrent sessions</li>
+          <li>OAuth Proxy</li>
+          <li>Custom policy rules</li>
+          <li>All verification adapters</li>
+          <li>Slack support (4h)</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Contact Sales</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Enterprise</div>
+        <div class="pricing-price">Custom</div>
+        <div class="pricing-credits">Volume pricing + SLA</div>
+        <ul class="pricing-features">
+          <li>Everything in Scale</li>
+          <li>Dedicated browser pool</li>
+          <li>Session Handoff</li>
+          <li>On-prem option</li>
+          <li>Custom verification adapters</li>
+          <li>SOC 2 compliance package</li>
+          <li>Dedicated support</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Talk to Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SDK
+     ============================================================ -->
+<section class="sdk" id="sdk">
+  <div class="container">
+    <div class="label">Developer Experience</div>
+    <h2 class="section-heading">5 lines. Governed. Structured.</h2>
+    <p class="section-desc">TypeScript and Python SDKs with Zod and Pydantic schema validation. Typed from request to response.</p>
+
+    <div class="sdk-grid">
+      <div class="sdk-block">
+        <div class="sdk-block-header">
+          <span class="sdk-block-lang">TypeScript</span>
+          <span class="sdk-block-install">npm i @aperture/sdk</span>
+        </div>
+<pre><span class="kw">import</span> { Aperture } <span class="kw">from</span> <span class="str">'@aperture/sdk'</span>;
+<span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+
+<span class="kw">const</span> session = <span class="kw">await</span> aperture.session
+  .<span class="fn">create</span>({
+    agentId: <span class="str">'my-agent'</span>,
+    domains: [<span class="str">'*.amazon.com'</span>],
+    budget: <span class="num">500</span>,
+  });
+
+<span class="kw">const</span> page = <span class="kw">await</span> session
+  .<span class="fn">navigate</span>(<span class="str">'https://amazon.com/dp/B0X'</span>);
+
+<span class="cm">// Typed extraction with Zod</span>
+<span class="kw">const</span> products = <span class="kw">await</span> session
+  .<span class="fn">extract</span>(<span class="str">'search results'</span>, {
+    schema: z.<span class="fn">array</span>(z.<span class="fn">object</span>({
+      title: z.<span class="fn">string</span>(),
+      price: z.<span class="fn">number</span>(),
+      rating: z.<span class="fn">number</span>(),
+    })),
+  });</pre>
+      </div>
+      <div class="sdk-block">
+        <div class="sdk-block-header">
+          <span class="sdk-block-lang">Python</span>
+          <span class="sdk-block-install">pip install aperture-sdk</span>
+        </div>
+<pre><span class="kw">from</span> aperture <span class="kw">import</span> Aperture
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+<span class="kw">class</span> <span class="fn">Product</span>(BaseModel):
+    title: str
+    price: float
+    rating: float
+
+<span class="kw">async with</span> aperture.<span class="fn">session</span>(
+    agent_id=<span class="str">"my-agent"</span>,
+    domains=[<span class="str">"*.amazon.com"</span>],
+    budget=<span class="num">500</span>,
+) <span class="kw">as</span> session:
+    page = <span class="kw">await</span> session.<span class="fn">navigate</span>(
+        <span class="str">"https://amazon.com/dp/B0X"</span>
+    )
+
+    <span class="cm"># Typed extraction with Pydantic</span>
+    products = <span class="kw">await</span> session.<span class="fn">extract</span>(
+        <span class="str">"search results"</span>,
+        schema=Product,
+        many=True,
+    )</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="14" cy="14" r="13" stroke="#C2622A" stroke-width="1.5" fill="none"/>
+            <path d="M14 5.5L17.5 10.5H21.5L18 14L21.5 17.5H17.5L14 22.5L10.5 17.5H6.5L10 14L6.5 10.5H10.5L14 5.5Z" stroke="#C2622A" stroke-width="1.3" fill="none" stroke-linejoin="round"/>
+            <circle cx="14" cy="14" r="3.5" stroke="#C2622A" stroke-width="1.3" fill="none"/>
+          </svg>
+          aperture
+        </div>
+        <p class="footer-tagline">The trust and execution layer between AI agents and the real world. Every action governed. Every result structured.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API Reference</a></li>
+          <li><a href="#">Site Profiles</a></li>
+          <li><a href="#">Changelog</a></li>
+          <li><a href="#">Status</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">GitHub</a></li>
+          <li><a href="#">Community</a></li>
+          <li><a href="#">xBPP Spec</a></li>
+          <li><a href="#">Agent-Web Protocol</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 Aperture. All rights reserved.</span>
+      <div class="footer-legal">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Security</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     JS — Nav scroll + reveal animations
+     ============================================================ -->
+<script>
+// Nav scroll detection
+const nav = document.getElementById('nav');
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 10) {
+    nav.classList.add('scrolled');
+  } else {
+    nav.classList.remove('scrolled');
+  }
+}, { passive: true });
+
+// Intersection Observer for reveal animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, {
+  threshold: 0.1,
+  rootMargin: '0px 0px -40px 0px'
+});
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Smooth anchor scrolling
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+<script>
+  async function updateStatus() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    try {
+      const res = await fetch('/api/v1/bridge/health');
+      if (res.ok) {
+        const data = await res.json();
+        const healthy = data.status === 'ok';
+        dot.style.background = healthy ? '#2E7D4F' : '#B8372A';
+        text.innerText = healthy ? `System LIVE (${data.active_tasks} active)` : `System DEGRADED`;
+        text.style.color = healthy ? '#2E7D4F' : '#B8372A';
+      } else {
+        throw new Error();
+      }
+    } catch (err) {
+      dot.style.background = '#8A8A82';
+      text.innerText = 'System Offline';
+      text.style.color = '#8A8A82';
+    }
+  }
+  updateStatus();
+  setInterval(updateStatus, 10000);
+</script>
+</body>
+</html>

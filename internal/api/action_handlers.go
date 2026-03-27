@@ -3,6 +3,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"net/http"
 
 	"github.com/ApertureHQ/aperture/internal/domain"
@@ -65,6 +66,9 @@ func (h *ActionHandlers) ExecuteAction(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
+// encodeBase64 encodes raw bytes to a base64 string.
+func encodeBase64(b []byte) string { return base64.StdEncoding.EncodeToString(b) }
+
 // Screenshot handles POST /api/v1/actions/screenshot.
 // Navigates to the provided URL and returns PNG bytes.
 func (h *ActionHandlers) Screenshot(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +93,10 @@ func (h *ActionHandlers) Screenshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/png")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(buf)
+	// Return JSON with base64-encoded PNG so MCP clients can consume it uniformly.
+	writeJSON(w, http.StatusOK, map[string]string{
+		"url":       req.URL,
+		"data":      encodeBase64(buf),
+		"mime_type": "image/png",
+	})
 }

@@ -58,6 +58,13 @@ func NewRouter(cfgs ...RouterConfig) http.Handler {
 
 	registerV1Routes(r, cfg)
 
+	// Serve the Aperture website from the static directory.
+	fs := http.FileServer(http.Dir("internal/api/static"))
+	r.Handle("/website/*", http.StripPrefix("/website", fs))
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/website/", http.StatusMovedPermanently)
+	})
+
 	return r
 }
 
