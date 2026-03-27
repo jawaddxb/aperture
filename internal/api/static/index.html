@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aperture — The trust layer for agent actions</title>
+<title>Aperture — Browser automation that beats anti-bot detection</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1063,25 +1063,25 @@ img { max-width: 100%; display: block; }
   <div class="container">
     <div class="hero-grid">
       <div class="hero-content">
-        <div class="label">Agent Infrastructure</div>
-        <h1>The trust layer for <span class="accent">agent actions</span></h1>
-        <p class="hero-sub">Every action policy-checked. Every result structured. Aperture is the governed runtime between AI agents and the web.</p>
+        <div class="label">Browser Automation Engine</div>
+        <h1>Browse the web like a <span class="accent">real human</span></h1>
+        <p class="hero-sub">Aperture is a high-performance browser engine for AI agents. Native Chrome for clean sites. Automatic Camoufox fallback for Cloudflare, PerimeterX, DataDome, and Akamai. One MCP tool, zero config.</p>
         <div class="hero-ctas">
-          <a href="#" class="btn btn-primary">Get Started Free</a>
-          <a href="#" class="btn btn-secondary">Read the Docs</a>
+          <a href="https://github.com/jawaddxb/aperture" class="btn btn-primary">View on GitHub</a>
+          <a href="#docs" class="btn btn-secondary">Read the Docs</a>
         </div>
         <div class="hero-metrics">
           <div>
-            <div class="hero-metric-value">&lt;10ms</div>
-            <div class="hero-metric-label">Policy check latency</div>
+            <div class="hero-metric-value">3–7s</div>
+            <div class="hero-metric-label">Clean site screenshots</div>
           </div>
           <div>
-            <div class="hero-metric-value">98.2%</div>
-            <div class="hero-metric-label">Element resolution accuracy</div>
+            <div class="hero-metric-value">11/11</div>
+            <div class="hero-metric-label">Sites cracked in testing</div>
           </div>
           <div>
-            <div class="hero-metric-value">5 lines</div>
-            <div class="hero-metric-label">To ship a governed agent</div>
+            <div class="hero-metric-value">5 tools</div>
+            <div class="hero-metric-label">MCP surface for agents</div>
           </div>
         </div>
       </div>
@@ -1121,24 +1121,24 @@ console.<span class="fn">log</span>(page.structured_data.price);
     <div class="problem-grid">
       <div>
         <div class="label">The Problem</div>
-        <h2 class="section-heading">Agents can browse the web. Should&nbsp;they?</h2>
-        <p class="section-desc">Every production agent team hits the same wall — not technical, but trust. The CISO asks: "What can this agent do? Who's liable?" Nobody has an answer.</p>
+        <h2 class="section-heading">Anti-bot systems block your&nbsp;agents</h2>
+        <p class="section-desc">Every headless browser gets caught. Cloudflare, PerimeterX, DataDome, Akamai — they all see through Playwright and Puppeteer. Your agent hits a CAPTCHA wall and gives up.</p>
       </div>
       <div class="problem-cards stagger">
         <div class="problem-card reveal">
           <div class="problem-card-num">Problem 01</div>
-          <h3>Token waste on raw HTML</h3>
-          <p>Agents consume thousands of tokens parsing DOM soup. Your LLM reads &lt;div class="a-price a-text-price"&gt; when it should read <strong>$348.00</strong>. You're paying for HTML, not intelligence.</p>
+          <h3>TLS fingerprint detection</h3>
+          <p>Cloudflare's server-side checks compare your browser's TLS ClientHello against known headless signatures. No amount of JavaScript tricks can fake a real TLS fingerprint. <strong>Aperture uses Camoufox</strong> — a modified Firefox that passes.</p>
         </div>
         <div class="problem-card reveal">
           <div class="problem-card-num">Problem 02</div>
-          <h3>Zero governance</h3>
-          <p>Can this agent wire money? Accept terms of service? Access unapproved domains? With Browserbase and Playwright, the answer is "whatever the agent decides." That's not a production answer.</p>
+          <h3>Canvas &amp; WebGL fingerprinting</h3>
+          <p>Anti-bot systems draw hidden canvases and compare the output. Headless Chrome renders identically every time — a dead giveaway. Aperture injects <strong>canvas noise, blocks WebRTC, and randomizes viewports</strong> on every session.</p>
         </div>
         <div class="problem-card reveal">
           <div class="problem-card-num">Problem 03</div>
-          <h3>Brittle selectors break everything</h3>
-          <p>CSS selectors are a liability. Amazon changes a class name, your agent breaks. Your team spends 60% of engineering time maintaining selectors instead of building product.</p>
+          <h3>Behavioral analysis</h3>
+          <p>Real humans don't click at pixel-perfect coordinates in 0ms. Bot detectors track mouse paths, scroll patterns, and timing. Aperture uses <strong>Bézier curve humanization</strong> with natural jitter and timing variation.</p>
         </div>
       </div>
     </div>
@@ -1152,7 +1152,7 @@ console.<span class="fn">log</span>(page.structured_data.price);
   <div class="container">
     <div class="label">Architecture</div>
     <h2 class="section-heading">The 4-layer stack</h2>
-    <p class="section-desc">The agent decides what to do. Aperture executes, governs, and attests. We are hands, not brain.</p>
+    <p class="section-desc">Your agent sends a goal. Aperture plans, stealth-hardens, executes, and auto-escalates to Camoufox if blocked. One MCP call, zero config.</p>
 
     <div class="stack-layers">
       <div class="stack-layer reveal">
@@ -1165,22 +1165,22 @@ console.<span class="fn">log</span>(page.structured_data.price);
       <div class="stack-layer highlight reveal">
         <div class="stack-layer-name">Layer 2</div>
         <div>
-          <div class="stack-layer-title">Aperture Runtime <span class="stack-layer-tag tag-us">← We are here</span></div>
-          <div class="stack-layer-desc">Resolves targets, executes actions, enforces policy via xBPP, returns structured output with full audit trail.</div>
+          <div class="stack-layer-title">Aperture Engine <span class="stack-layer-tag tag-us">← We are here</span></div>
+          <div class="stack-layer-desc">LLM planner decomposes goals into steps. Stealth module hardens each browser instance. 5-browser pool with pre-warmed sessions.</div>
         </div>
       </div>
       <div class="stack-layer highlight reveal">
         <div class="stack-layer-name">Layer 3</div>
         <div>
-          <div class="stack-layer-title">Site Profiles <span class="stack-layer-tag tag-us">← We are here</span></div>
-          <div class="stack-layer-desc">Domain-specific intelligence. Every website becomes a typed API. The agent never sees HTML.</div>
+          <div class="stack-layer-title">Anti-Bot Detection <span class="stack-layer-tag tag-us">← We are here</span></div>
+          <div class="stack-layer-desc">Auto-detects Cloudflare, PerimeterX, DataDome, Akamai. Native Chrome for clean sites, Camoufox fallback for hardened ones. Zero manual config.</div>
         </div>
       </div>
       <div class="stack-layer reveal">
         <div class="stack-layer-name">Layer 4</div>
         <div>
-          <div class="stack-layer-title">The Web <span class="stack-layer-tag tag-them">Not our fault</span></div>
-          <div class="stack-layer-desc">Messy. Inconsistent. Adversarial. We handle the chaos so agents don't have to.</div>
+          <div class="stack-layer-title">The Hostile Web <span class="stack-layer-tag tag-them">The enemy</span></div>
+          <div class="stack-layer-desc">Anti-bot walls, CAPTCHAs, TLS fingerprinting, behavioral analysis, IP reputation scoring. We crack it so your agents don't have to.</div>
         </div>
       </div>
     </div>
@@ -1194,7 +1194,7 @@ console.<span class="fn">log</span>(page.structured_data.price);
   <div class="container">
     <div class="label">Comparison</div>
     <h2 class="section-heading">Not another browser tool</h2>
-    <p class="section-desc">Browserbase gives you a browser. Playwright gives you a library. Aperture gives you a governed runtime.</p>
+    <p class="section-desc">Browserbase gives you a browser. Playwright gives you a library. Aperture gives you a stealth engine that actually works against anti-bot systems.</p>
 
     <table class="comparison-table">
       <thead>
@@ -1270,41 +1270,41 @@ console.<span class="fn">log</span>(page.structured_data.price);
      ============================================================ -->
 <section class="xbpp">
   <div class="container">
-    <div class="label">Governance</div>
+    <div class="label">Stealth Engine</div>
     <div class="xbpp-grid">
       <div>
-        <div class="xbpp-question">Would you let an AI agent buy things with your <em>company credit card?</em></div>
-        <p class="xbpp-answer">No? That's because every other tool lets agents do anything. Aperture is the only runtime where every action is policy-checked before execution. Enterprise compliance teams say yes. CISOs stop blocking agent adoption.</p>
-        <p class="xbpp-answer">xBPP — Cross-platform Behavior Policy Protocol. 12 checks on every action. Non-negotiable. Non-bypassable. No LLM in the policy path.</p>
+        <div class="xbpp-question">What if your agent could browse like a <em>real human?</em></div>
+        <p class="xbpp-answer">Aperture's stealth module applies 12 hardening layers to every browser session. Not JavaScript patches — deep engine-level modifications that pass server-side verification.</p>
+        <p class="xbpp-answer">When native Chrome isn't enough, Aperture auto-detects the challenge and seamlessly falls back to Camoufox — a modified Firefox binary that passes Cloudflare's TLS fingerprint checks.</p>
         <div class="xbpp-latency">
           <div class="xbpp-latency-item">
-            <div class="xbpp-latency-value">&lt;10ms</div>
-            <div class="xbpp-latency-label">Cached policy check</div>
+            <div class="xbpp-latency-value">3–7s</div>
+            <div class="xbpp-latency-label">Clean site (native Chrome)</div>
           </div>
           <div class="xbpp-latency-item">
-            <div class="xbpp-latency-value">&lt;50ms</div>
-            <div class="xbpp-latency-label">Cold policy check</div>
+            <div class="xbpp-latency-value">20–22s</div>
+            <div class="xbpp-latency-label">Hardened site (Camoufox)</div>
           </div>
           <div class="xbpp-latency-item">
             <div class="xbpp-latency-value">0</div>
-            <div class="xbpp-latency-label">LLM tokens used</div>
+            <div class="xbpp-latency-label">Manual config required</div>
           </div>
         </div>
       </div>
       <div>
         <div class="xbpp-checks stagger">
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">01</span><span class="xbpp-check-name">Domain allowlist</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">02</span><span class="xbpp-check-name">Action type allowlist</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">03</span><span class="xbpp-check-name">Content classification</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">04</span><span class="xbpp-check-name">Budget check</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">05</span><span class="xbpp-check-name">Rate limiting</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">06</span><span class="xbpp-check-name">Data exfiltration check</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">07</span><span class="xbpp-check-name">Transaction detection</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">08</span><span class="xbpp-check-name">Authentication boundary</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">09</span><span class="xbpp-check-name">Scope check</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">10</span><span class="xbpp-check-name">Reputation check</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">11</span><span class="xbpp-check-name">Operator override</span></div>
-          <div class="xbpp-check reveal"><span class="xbpp-check-num">12</span><span class="xbpp-check-name">Escalation rules</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">01</span><span class="xbpp-check-name">Canvas noise injection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">02</span><span class="xbpp-check-name">WebRTC leak blocking</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">03</span><span class="xbpp-check-name">Viewport randomization</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">04</span><span class="xbpp-check-name">Realistic plugin mocking</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">05</span><span class="xbpp-check-name">chrome.runtime injection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">06</span><span class="xbpp-check-name">Timezone/geo spoofing</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">07</span><span class="xbpp-check-name">Bézier mouse humanization</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">08</span><span class="xbpp-check-name">Cloudflare Turnstile detection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">09</span><span class="xbpp-check-name">PerimeterX detection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">10</span><span class="xbpp-check-name">DataDome detection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">11</span><span class="xbpp-check-name">Akamai Bot Manager detection</span></div>
+          <div class="xbpp-check reveal"><span class="xbpp-check-num">12</span><span class="xbpp-check-name">Camoufox auto-fallback</span></div>
         </div>
       </div>
     </div>
