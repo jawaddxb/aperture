@@ -21,6 +21,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/ApertureHQ/aperture/internal/executor"
 	"github.com/ApertureHQ/aperture/internal/llm"
+	"github.com/ApertureHQ/aperture/internal/memory"
 	"github.com/ApertureHQ/aperture/internal/observe"
 	"github.com/ApertureHQ/aperture/internal/planner"
 	"github.com/ApertureHQ/aperture/internal/policy"
@@ -106,6 +107,10 @@ func main() {
 	// Metrics collector for action timing and success rates.
 	metrics := observe.NewInMemoryMetrics()
 
+	// Agent state KV store for per-agent memory.
+	agentStateStore := memory.NewInMemoryKV()
+	slog.Info("agent state KV store enabled")
+
 	// Progress emitter for WebSocket streaming.
 	emitter := stream.NewChannelEmitter()
 
@@ -136,6 +141,7 @@ func main() {
 		PolicyEngine:      policyEngine,
 		ProfileManager:    profileMgr,
 		CredentialVault:   vault,
+		AgentStateStore:   agentStateStore,
 		Auth:              buildAuthConfig(cfg),
 		RateLimit:         api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},
 		CORSOrigins:       cfg.API.CORSOrigins,

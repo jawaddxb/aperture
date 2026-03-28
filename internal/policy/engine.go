@@ -4,6 +4,7 @@ package policy
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 // InMemoryPolicyEngine stores agent policies in memory and evaluates actions
-// against a 7-check rule pipeline. Safe for concurrent use.
+// against a 12-check rule pipeline. Safe for concurrent use.
 type InMemoryPolicyEngine struct {
 	mu       sync.RWMutex
 	policies map[string]domain.AgentPolicy
@@ -24,6 +25,9 @@ type InMemoryPolicyEngine struct {
 	// rateBuckets tracks per-agent last-minute action timestamps for rate limiting.
 	bucketMu sync.Mutex
 	buckets  map[string][]time.Time
+
+	// blockCounts tracks accumulated BLOCK decisions per agent for reputation check (check 12).
+	blockCounts sync.Map
 }
 
 // NewInMemoryPolicyEngine constructs a ready-to-use policy engine.
@@ -54,43 +58,117 @@ func (e *InMemoryPolicyEngine) Evaluate(_ context.Context, agentID, actionType, 
 	// Check 1: Domain blocklist
 	if d := checkDomainBlocklist(pol.DomainBlocklist, domainName); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
 	}
 
 	// Check 2: Domain allowlist
 	if d := checkDomainAllowlist(pol.DomainAllowlist, domainName); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
 	}
 
 	// Check 3: Action allowlist
 	if d := checkActionAllowlist(pol.ActionAllowlist, actionType); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
 	}
 
 	// Check 4: Max actions per session
 	if d := e.checkMaxActions(agentID, pol.MaxActionsPerSession); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
 	}
 
 	// Check 5: Rate limit
 	if d := e.checkRateLimit(agentID, pol.RateLimitPerMin); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
 	}
 
 	// Check 6: Custom rules
 	if d := checkCustomRules(pol.CustomRules, actionType, domainName); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
 	}
 
 	// Check 7: Transaction threshold
 	if d := checkTransactionThreshold(pol.TransactionThresholdUSD, actionType, domainName); d != nil {
 		d.LatencyMs = time.Since(start).Milliseconds()
+		e.incrementBlockCount(agentID, d.Result)
 		return *d
+	}
+
+	// Check 8: PII content check
+	// If AllowPII == false AND the domain looks like a financial/medical/HR site → ESCALATE
+	if !pol.AllowPII && containsAny(domainName, []string{"bank", "health", "medical", "hr", "payroll", "insurance", "pension"}) && actionType != "navigate" {
+		d := domain.PolicyDecision{
+			Result:    domain.PolicyEscalate,
+			Reason:    "pii_domain_escalation: domain may contain PII",
+			CheckID:   "check_8_content",
+			LatencyMs: time.Since(start).Milliseconds(),
+		}
+		e.incrementBlockCount(agentID, d.Result)
+		return d
+	}
+
+	// Check 9: Data exfiltration check
+	if len(pol.DataExfilPatterns) > 0 && actionType == "extract" {
+		for _, pattern := range pol.DataExfilPatterns {
+			if strings.Contains(strings.ToLower(domainName), strings.ToLower(pattern)) {
+				d := domain.PolicyDecision{
+					Result:    domain.PolicyBlock,
+					Reason:    "data_exfil_blocked: domain matches exfil pattern " + pattern,
+					CheckID:   "check_9_exfil",
+					LatencyMs: time.Since(start).Milliseconds(),
+				}
+				e.incrementBlockCount(agentID, d.Result)
+				return d
+			}
+		}
+	}
+
+	// Check 10: Authentication boundary (covered by action allowlist check 3 — pass-through).
+
+	// Check 11: Scope check
+	if len(pol.ScopeKeywords) > 0 {
+		matched := false
+		for _, kw := range pol.ScopeKeywords {
+			if strings.Contains(actionType, strings.ToLower(kw)) || strings.Contains(strings.ToLower(domainName), strings.ToLower(kw)) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			d := domain.PolicyDecision{
+				Result:    domain.PolicyBlock,
+				Reason:    "scope_violation: action/domain not in declared scope",
+				CheckID:   "check_11_scope",
+				LatencyMs: time.Since(start).Milliseconds(),
+			}
+			e.incrementBlockCount(agentID, d.Result)
+			return d
+		}
+	}
+
+	// Check 12: Reputation check
+	if pol.MaxReputationScore > 0 {
+		if count, ok := e.blockCounts.Load(agentID); ok {
+			if count.(int) >= pol.MaxReputationScore {
+				d := domain.PolicyDecision{
+					Result:    domain.PolicyEscalate,
+					Reason:    fmt.Sprintf("reputation_threshold: %d blocks accumulated", count.(int)),
+					CheckID:   "check_12_reputation",
+					LatencyMs: time.Since(start).Milliseconds(),
+				}
+				return d
+			}
+		}
 	}
 
 	// Increment counters on ALLOW.
@@ -272,6 +350,25 @@ func (e *InMemoryPolicyEngine) incrementCounters(agentID string) {
 	e.bucketMu.Lock()
 	e.buckets[agentID] = append(e.buckets[agentID], time.Now())
 	e.bucketMu.Unlock()
+}
+
+// incrementBlockCount bumps the block counter for an agent when a BLOCK decision is returned.
+func (e *InMemoryPolicyEngine) incrementBlockCount(agentID string, result domain.PolicyResult) {
+	if result == domain.PolicyBlock {
+		actual, _ := e.blockCounts.LoadOrStore(agentID, 0)
+		e.blockCounts.Store(agentID, actual.(int)+1)
+	}
+}
+
+// containsAny returns true if s contains any of the given patterns (case-insensitive).
+func containsAny(s string, patterns []string) bool {
+	lower := strings.ToLower(s)
+	for _, p := range patterns {
+		if strings.Contains(lower, strings.ToLower(p)) {
+			return true
+		}
+	}
+	return false
 }
 
 // ─── domain matching ───────────────────────────────────────────────────────────

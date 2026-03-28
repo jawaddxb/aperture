@@ -5,6 +5,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync"
 	"time"
 
@@ -200,10 +201,17 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 		}
 		for _, step := range plan.Steps {
 			currentDomain := ""
+			// Try to get domain from previous navigate result.
 			if session.Plan != nil && len(session.Results) > 0 {
 				last := session.Results[len(session.Results)-1]
 				if last.Result != nil && last.Result.PageState != nil {
-					currentDomain = last.Result.PageState.URL
+					currentDomain = extractDomain(last.Result.PageState.URL)
+				}
+			}
+			// For navigate actions, extract domain from the URL in the step itself.
+			if step.Action == "navigate" {
+				if rawURL, ok := step.Params["url"].(string); ok && rawURL != "" {
+					currentDomain = extractDomain(rawURL)
 				}
 			}
 			decision := m.policyEngine.Evaluate(ctx, agentID, step.Action, currentDomain)
@@ -223,6 +231,14 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 		m.markFailed(id)
 		return nil, fmt.Errorf("execute: %w", err)
 	}
+
+	// Assign per-step costs and compute total.
+	totalCost := 0
+	for i := range result.Steps {
+		result.Steps[i].Cost = domain.ActionCost(result.Steps[i].Step.Action)
+		totalCost += result.Steps[i].Cost
+	}
+	result.TotalCost = totalCost
 
 	// Persist cookies for future sessions.
 	if m.authPersist != nil {
@@ -305,6 +321,19 @@ func (m *DefaultSessionManager) finaliseSession(id string, result *domain.RunRes
 		s.Status = "failed"
 	}
 	s.UpdatedAt = time.Now()
+}
+
+// extractDomain returns the host portion of a URL, or the input unchanged
+// if parsing fails (e.g. bare domain strings).
+func extractDomain(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Host == "" {
+		return rawURL
+	}
+	return u.Host
 }
 
 // compile-time interface assertion.

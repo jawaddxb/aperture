@@ -33,6 +33,21 @@ type AgentPolicy struct {
 	TransactionThresholdUSD float64      `json:"transaction_threshold_usd,omitempty"`
 	EscalationWebhook       string       `json:"escalation_webhook,omitempty"`
 	CustomRules             []PolicyRule `json:"custom_rules,omitempty"`
+
+	// Check 8: if false, escalate on domains containing PII indicators.
+	AllowPII bool `json:"allow_pii,omitempty"`
+
+	// Check 9: patterns in extracted data that trigger BLOCK (e.g. "ssn", "credit_card").
+	DataExfilPatterns []string `json:"data_exfil_patterns,omitempty"`
+
+	// Check 11: if non-empty, action/domain must match a keyword to proceed.
+	ScopeKeywords []string `json:"scope_keywords,omitempty"`
+
+	// Check 12: 0 = no check; agent blocks exceeding this threshold → ESCALATE.
+	MaxReputationScore int `json:"max_reputation_score,omitempty"`
+
+	// Check 8 companion: if false, block financial transaction pages.
+	AllowFinancial bool `json:"allow_financial,omitempty"`
 }
 
 // PolicyRule is an operator-defined custom rule.

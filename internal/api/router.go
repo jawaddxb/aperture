@@ -54,6 +54,9 @@ type RouterConfig struct {
 	// CredentialVault, when set, enables credential CRUD endpoints.
 	CredentialVault domain.CredentialVault
 
+	// AgentStateStore, when set, enables agent memory KV endpoints.
+	AgentStateStore domain.AgentStateStore
+
 	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
 	Auth AuthConfig
 
@@ -104,6 +107,7 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 		r.Post("/sessions", sh.Create)
 		r.Get("/sessions", sh.List)
 		r.Get("/sessions/{id}", sh.GetByID)
+		r.Get("/sessions/{id}/snapshot", sh.Snapshot)
 		r.Post("/sessions/{id}/execute", sh.Execute)
 		r.Delete("/sessions/{id}", sh.Delete)
 
@@ -149,6 +153,14 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 			r.Get("/agents/{agent_id}/credentials", ch.List)
 			r.Put("/agents/{agent_id}/credentials/{domain}", ch.Store)
 			r.Delete("/agents/{agent_id}/credentials/{domain}", ch.Delete)
+		}
+
+		if cfg.AgentStateStore != nil {
+			mh := NewMemoryHandlers(cfg.AgentStateStore)
+			r.Get("/agents/{agent_id}/memory", mh.List)
+			r.Put("/agents/{agent_id}/memory/{key}", mh.SetKey)
+			r.Get("/agents/{agent_id}/memory/{key}", mh.GetKey)
+			r.Delete("/agents/{agent_id}/memory/{key}", mh.DeleteKey)
 		}
 
 		RegisterBridgeRoutes(r, BridgeConfig{

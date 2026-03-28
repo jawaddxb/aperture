@@ -188,3 +188,96 @@ func TestSetGetPolicy_Roundtrip(t *testing.T) {
 	assert.Equal(t, []string{"*.example.com"}, got.DomainAllowlist)
 	assert.Equal(t, 60, got.RateLimitPerMin)
 }
+
+// ─── xBPP Checks 8–12 ──────────────────────────────────────────────────────────
+
+func TestCheck8_PIIDomainEscalation(t *testing.T) {
+	e := NewInMemoryPolicyEngine()
+	require.NoError(t, e.SetPolicy("agent-1", domain.AgentPolicy{
+		AllowPII: false, // default: block PII domains
+	}))
+
+	// Non-navigate action on a medical domain → ESCALATE
+	d := e.Evaluate(context.Background(), "agent-1", "click", "portal.health.gov")
+	assert.Equal(t, domain.PolicyEscalate, d.Result)
+	assert.Equal(t, "check_8_content", d.CheckID)
+
+	// Navigate is exempted from check 8
+	d = e.Evaluate(context.Background(), "agent-1", "navigate", "portal.health.gov")
+	assert.Equal(t, domain.PolicyAllow, d.Result)
+
+	// AllowPII = true → no escalation
+	require.NoError(t, e.SetPolicy("agent-2", domain.AgentPolicy{AllowPII: true}))
+	d = e.Evaluate(context.Background(), "agent-2", "click", "portal.health.gov")
+	assert.Equal(t, domain.PolicyAllow, d.Result)
+}
+
+func TestCheck9_DataExfiltrationBlock(t *testing.T) {
+	e := NewInMemoryPolicyEngine()
+	require.NoError(t, e.SetPolicy("agent-1", domain.AgentPolicy{
+		AllowPII:          true, // bypass check 8 so check 9 fires
+		DataExfilPatterns: []string{"secret", "ssn"},
+	}))
+
+	// Extract on a domain matching an exfil pattern → BLOCK
+	d := e.Evaluate(context.Background(), "agent-1", "extract", "secret-vault.com")
+	assert.Equal(t, domain.PolicyBlock, d.Result)
+	assert.Equal(t, "check_9_exfil", d.CheckID)
+
+	// Non-extract action → ALLOW
+	d = e.Evaluate(context.Background(), "agent-1", "click", "secret-vault.com")
+	assert.Equal(t, domain.PolicyAllow, d.Result)
+
+	// Extract on non-matching domain → ALLOW
+	d = e.Evaluate(context.Background(), "agent-1", "extract", "example.com")
+	assert.Equal(t, domain.PolicyAllow, d.Result)
+}
+
+func TestCheck11_ScopeCheck(t *testing.T) {
+	e := NewInMemoryPolicyEngine()
+	require.NoError(t, e.SetPolicy("agent-1", domain.AgentPolicy{
+		ScopeKeywords: []string{"shopping", "amazon"},
+	}))
+
+	// Domain contains "amazon" → ALLOW
+	d := e.Evaluate(context.Background(), "agent-1", "click", "www.amazon.com")
+	assert.Equal(t, domain.PolicyAllow, d.Result)
+
+	// Domain not in scope → BLOCK
+	d = e.Evaluate(context.Background(), "agent-1", "click", "evil.com")
+	assert.Equal(t, domain.PolicyBlock, d.Result)
+	assert.Equal(t, "check_11_scope", d.CheckID)
+}
+
+func TestCheck12_ReputationEscalation(t *testing.T) {
+	e := NewInMemoryPolicyEngine()
+	require.NoError(t, e.SetPolicy("agent-1", domain.AgentPolicy{
+		DomainBlocklist:    []string{"blocked.com"},
+		MaxReputationScore: 3,
+	}))
+
+	ctx := context.Background()
+	// Accumulate 3 blocks via domain blocklist
+	for i := 0; i < 3; i++ {
+		d := e.Evaluate(ctx, "agent-1", "navigate", "blocked.com")
+		assert.Equal(t, domain.PolicyBlock, d.Result)
+	}
+
+	// Now any action should trigger reputation escalation (check 12 runs even on allowed domains)
+	d := e.Evaluate(ctx, "agent-1", "click", "safe.com")
+	assert.Equal(t, domain.PolicyEscalate, d.Result)
+	assert.Equal(t, "check_12_reputation", d.CheckID)
+}
+
+func TestCheck8_PIIBankDomain(t *testing.T) {
+	e := NewInMemoryPolicyEngine()
+	require.NoError(t, e.SetPolicy("agent-1", domain.AgentPolicy{
+		AllowPII: false,
+	}))
+
+	// "bank" in domain should trigger PII escalation for non-navigate
+	d := e.Evaluate(context.Background(), "agent-1", "type", "www.mybank.com")
+	assert.Equal(t, domain.PolicyEscalate, d.Result)
+	assert.Equal(t, "check_8_content", d.CheckID)
+	assert.Contains(t, d.Reason, "pii_domain_escalation")
+}

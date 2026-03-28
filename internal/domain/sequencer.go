@@ -20,6 +20,9 @@ type StepResult struct {
 
 	// Duration is the wall-clock time spent executing this step (including recovery).
 	Duration time.Duration `json:"duration_ns"`
+
+	// Cost is the credit cost consumed by this action.
+	Cost int `json:"cost"`
 }
 
 // RunResult holds the overall outcome of running an entire Plan.
@@ -38,6 +41,9 @@ type RunResult struct {
 
 	// Duration is the total wall-clock time for the run.
 	Duration time.Duration `json:"duration_ns"`
+
+	// TotalCost is the sum of all step costs in credits.
+	TotalCost int `json:"total_cost"`
 }
 
 // Sequencer executes a Plan against a BrowserInstance and returns a RunResult.
