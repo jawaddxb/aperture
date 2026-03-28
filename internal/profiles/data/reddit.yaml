@@ -1,0 +1,74 @@
+domain: "*.reddit.com"
+version: "2026.03.28"
+pages:
+  post:
+    url_patterns:
+      - "/comments/"
+    schema:
+      title:
+        selector: "h1"
+        type: "string"
+        required: true
+      author:
+        selector: "a[data-testid='post_author_link']"
+        type: "string"
+      subreddit:
+        selector: "a[data-click-id='subreddit']"
+        type: "string"
+      score:
+        selector: "[data-click-id='upvote'] + div, shreddit-post [score]"
+        type: "number"
+      comment_count:
+        selector: "span[data-click-id='comments_count']"
+        type: "number"
+      post_body:
+        selector: "[data-testid='post-container'] [data-click-id='text'] p"
+        type: "string"
+    actions:
+      upvote:
+        primary:
+          ax_role: "button"
+          ax_name: "upvote"
+        fallback:
+          selector: "[data-click-id='upvote']"
+      comment:
+        primary:
+          ax_role: "textbox"
+          ax_name: "Add a comment"
+        fallback:
+          selector: "[data-testid='comment-composer-textarea']"
+  subreddit:
+    url_patterns:
+      - "/r/"
+    schema:
+      name:
+        selector: "h1"
+        type: "string"
+        required: true
+      members:
+        selector: "faceplate-tracker[noun='subscriber'] faceplate-number"
+        type: "number"
+      description:
+        selector: "[data-testid='subreddit-sidebar'] p"
+        type: "string"
+    actions:
+      join:
+        primary:
+          ax_role: "button"
+          ax_name: "Join"
+        fallback:
+          selector: "shreddit-subreddit-header-buttons button"
+  search:
+    url_patterns:
+      - "/search/"
+    schema:
+      query:
+        selector: "#search-input input, input[name='q']"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search Reddit"
+        fallback:
+          selector: "#search-input input"

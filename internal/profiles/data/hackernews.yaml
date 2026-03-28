@@ -1,0 +1,66 @@
+domain: "news.ycombinator.com"
+version: "2026.03.28"
+pages:
+  front_page:
+    url_patterns:
+      - "/"
+      - "/news"
+    schema:
+      stories:
+        selector: ".titleline a"
+        type: "string"
+    actions:
+      next_page:
+        primary:
+          ax_role: "link"
+          ax_name: "More"
+        fallback:
+          selector: "a.morelink"
+  story:
+    url_patterns:
+      - "item?id="
+    schema:
+      title:
+        selector: ".titleline a"
+        type: "string"
+        required: true
+      url:
+        selector: ".titleline a"
+        type: "url"
+      points:
+        selector: ".score"
+        type: "number"
+      author:
+        selector: ".hnuser"
+        type: "string"
+      time:
+        selector: ".age a"
+        type: "string"
+      comment_count:
+        selector: ".subline a:last-child"
+        type: "number"
+    actions:
+      upvote:
+        primary:
+          ax_role: "link"
+          ax_name: "upvote"
+        fallback:
+          selector: ".votearrow"
+  user:
+    url_patterns:
+      - "user?id="
+    schema:
+      username:
+        selector: "a.hnuser"
+        type: "string"
+        required: true
+      karma:
+        selector: "td:contains('karma') + td"
+        type: "number"
+      created:
+        selector: "td:contains('created') + td"
+        type: "string"
+      about:
+        selector: "td:contains('about') + td"
+        type: "string"
+    actions: {}

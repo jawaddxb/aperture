@@ -1,0 +1,83 @@
+domain: "*.x.com"
+version: "2026.03.28"
+pages:
+  profile:
+    url_patterns:
+      - "/"
+    schema:
+      name:
+        selector: "[data-testid='UserName'] div span"
+        type: "string"
+        required: true
+      handle:
+        selector: "[data-testid='UserName'] div:nth-child(2) span"
+        type: "string"
+      bio:
+        selector: "[data-testid='UserDescription']"
+        type: "string"
+      followers:
+        selector: "a[href$='/verified_followers'] span span, a[href$='/followers'] span span"
+        type: "number"
+      following:
+        selector: "a[href$='/following'] span span"
+        type: "number"
+      location:
+        selector: "[data-testid='UserProfileHeader_Items'] span[data-testid='UserLocation']"
+        type: "string"
+    actions:
+      follow:
+        primary:
+          ax_role: "button"
+          ax_name: "Follow"
+        fallback:
+          selector: "[data-testid='followButton']"
+  tweet:
+    url_patterns:
+      - "/status/"
+    schema:
+      author:
+        selector: "[data-testid='User-Name'] a div span"
+        type: "string"
+        required: true
+      text:
+        selector: "[data-testid='tweetText']"
+        type: "string"
+      timestamp:
+        selector: "time"
+        type: "date"
+      likes:
+        selector: "[data-testid='like'] span"
+        type: "number"
+      retweets:
+        selector: "[data-testid='retweet'] span"
+        type: "number"
+      replies:
+        selector: "[data-testid='reply'] span"
+        type: "number"
+    actions:
+      like:
+        primary:
+          ax_role: "button"
+          ax_name: "Like"
+        fallback:
+          selector: "[data-testid='like']"
+      retweet:
+        primary:
+          ax_role: "button"
+          ax_name: "Repost"
+        fallback:
+          selector: "[data-testid='retweet']"
+  search:
+    url_patterns:
+      - "/search"
+    schema:
+      query:
+        selector: "input[data-testid='SearchBox_Search_Input']"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search"
+        fallback:
+          selector: "input[data-testid='SearchBox_Search_Input']"

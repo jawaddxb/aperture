@@ -1,0 +1,60 @@
+domain: "*.medium.com"
+version: "2026.03.28"
+pages:
+  article:
+    url_patterns:
+      - "/"
+    schema:
+      title:
+        selector: "article h1"
+        type: "string"
+        required: true
+      author:
+        selector: "[data-testid='authorName']"
+        type: "string"
+      published:
+        selector: "[data-testid='storyPublishDate']"
+        type: "date"
+      reading_time:
+        selector: "[data-testid='storyReadTime']"
+        type: "string"
+      claps:
+        selector: "[data-testid='clapCount']"
+        type: "number"
+      content:
+        selector: "article section"
+        type: "string"
+    actions:
+      clap:
+        primary:
+          ax_role: "button"
+          ax_name: "clap"
+        fallback:
+          selector: "[data-testid='headerClapButton']"
+      follow:
+        primary:
+          ax_role: "button"
+          ax_name: "Follow"
+        fallback:
+          selector: "button[data-action='toggle-follow']"
+  profile:
+    url_patterns:
+      - "/@"
+    schema:
+      name:
+        selector: "h2"
+        type: "string"
+        required: true
+      bio:
+        selector: ".pw-subtitle-paragraph"
+        type: "string"
+      followers:
+        selector: "a[href$='/followers'] span"
+        type: "number"
+    actions:
+      follow:
+        primary:
+          ax_role: "button"
+          ax_name: "Follow"
+        fallback:
+          selector: "button[data-action='toggle-follow']"

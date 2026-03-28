@@ -1,0 +1,51 @@
+domain: "*.wikipedia.org"
+version: "2026.03.28"
+pages:
+  article:
+    url_patterns:
+      - "/wiki/"
+    schema:
+      title:
+        selector: "#firstHeading"
+        type: "string"
+        required: true
+      summary:
+        selector: "#mw-content-text .mw-parser-output > p:not(.mw-empty-elt)"
+        type: "string"
+      categories:
+        selector: "#mw-normal-catlinks ul li a"
+        type: "string"
+      last_edited:
+        selector: "#footer-info-lastmod"
+        type: "string"
+      infobox:
+        selector: ".infobox"
+        type: "string"
+    actions:
+      edit:
+        primary:
+          ax_role: "link"
+          ax_name: "Edit"
+        fallback:
+          selector: "#ca-edit a"
+      view_history:
+        primary:
+          ax_role: "link"
+          ax_name: "View history"
+        fallback:
+          selector: "#ca-history a"
+  search:
+    url_patterns:
+      - "/w/index.php?search="
+      - "Special:Search"
+    schema:
+      query:
+        selector: "#searchInput, #ooui-php-1"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search Wikipedia"
+        fallback:
+          selector: "#searchInput"

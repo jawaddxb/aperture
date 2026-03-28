@@ -1,0 +1,49 @@
+domain: "*.bestbuy.com"
+version: "2026.03.28"
+pages:
+  product_detail:
+    url_patterns:
+      - "/site/"
+      - ".p?skuId="
+    schema:
+      title:
+        selector: ".sku-title h1"
+        type: "string"
+        required: true
+      price:
+        selector: ".priceView-customer-price span[aria-hidden='true']"
+        type: "currency"
+      rating:
+        selector: ".c-ratings-reviews-v4 .c-stars-v4"
+        type: "rating"
+      availability:
+        selector: ".fulfillment-add-to-cart-button button"
+        type: "string"
+      model:
+        selector: ".sku-model .sku-value"
+        type: "string"
+    actions:
+      add_to_cart:
+        primary:
+          ax_role: "button"
+          ax_name: "Add to Cart"
+        fallback:
+          selector: ".add-to-cart-button"
+  search_results:
+    url_patterns:
+      - "/searchpage"
+      - "/site/searchpage"
+    schema:
+      query:
+        selector: "#gh-search-input"
+        type: "string"
+      result_count:
+        selector: ".result-count span"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search"
+        fallback:
+          selector: "#gh-search-input"

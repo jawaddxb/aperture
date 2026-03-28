@@ -1,0 +1,62 @@
+domain: "*.yelp.com"
+version: "2026.03.28"
+pages:
+  business:
+    url_patterns:
+      - "/biz/"
+    schema:
+      name:
+        selector: "h1"
+        type: "string"
+        required: true
+      rating:
+        selector: "[aria-label*='star rating']"
+        type: "rating"
+      review_count:
+        selector: "a[href='#reviews']"
+        type: "number"
+      price:
+        selector: ".priceRange"
+        type: "string"
+      categories:
+        selector: ".css-1fdy0l5 a"
+        type: "string"
+      address:
+        selector: "address p"
+        type: "string"
+      phone:
+        selector: "p[class*='css-'] a[href^='tel:']"
+        type: "string"
+      hours:
+        selector: "table.hours-table td:last-child p"
+        type: "string"
+    actions:
+      write_review:
+        primary:
+          ax_role: "link"
+          ax_name: "Write a review"
+        fallback:
+          selector: "a[href*='writeareview']"
+      directions:
+        primary:
+          ax_role: "link"
+          ax_name: "Get Directions"
+        fallback:
+          selector: "a[href*='get_directions']"
+  search:
+    url_patterns:
+      - "/search"
+    schema:
+      query:
+        selector: "#search_description"
+        type: "string"
+      location:
+        selector: "#search_location"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "button"
+          ax_name: "Search"
+        fallback:
+          selector: "#header-search-submit"

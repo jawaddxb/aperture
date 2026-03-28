@@ -1,0 +1,50 @@
+domain: "*.walmart.com"
+version: "2026.03.28"
+pages:
+  product_detail:
+    url_patterns:
+      - "/ip/"
+    schema:
+      title:
+        selector: "h1[itemprop='name']"
+        type: "string"
+        required: true
+      price:
+        selector: "[itemprop='price']"
+        type: "currency"
+      rating:
+        selector: "[data-testid='reviews-header'] span"
+        type: "rating"
+      availability:
+        selector: "[data-testid='fulfillment-badge']"
+        type: "string"
+      seller:
+        selector: "[data-testid='seller-display-name'] a"
+        type: "string"
+    actions:
+      add_to_cart:
+        primary:
+          ax_role: "button"
+          ax_name: "Add to cart"
+        fallback:
+          selector: "[data-testid='add-to-cart-button']"
+      pickup:
+        primary:
+          ax_role: "radio"
+          ax_name: "Pickup"
+        fallback:
+          selector: "[data-testid='fulfillment-pickup']"
+  search_results:
+    url_patterns:
+      - "/search"
+    schema:
+      query:
+        selector: "input[name='q']"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search"
+        fallback:
+          selector: "input[name='q']"

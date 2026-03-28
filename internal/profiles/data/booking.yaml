@@ -1,0 +1,59 @@
+domain: "*.booking.com"
+version: "2026.03.28"
+pages:
+  hotel:
+    url_patterns:
+      - "/hotel/"
+    schema:
+      name:
+        selector: "h2.pp-header__title"
+        type: "string"
+        required: true
+      rating:
+        selector: ".d10a6220b4"
+        type: "rating"
+      review_score:
+        selector: "[data-testid='review-score-component'] div"
+        type: "number"
+      review_count:
+        selector: "[data-testid='review-score-component'] span"
+        type: "number"
+      address:
+        selector: "[data-node_tt_id='location_score_tooltip'] span"
+        type: "string"
+      price:
+        selector: "[data-testid='price-and-discounted-price']"
+        type: "currency"
+      facilities:
+        selector: "[data-testid='property-most-popular-facilities-wrapper'] span"
+        type: "string"
+    actions:
+      reserve:
+        primary:
+          ax_role: "button"
+          ax_name: "Reserve"
+        fallback:
+          selector: "[data-testid='cta-btn']"
+      check_availability:
+        primary:
+          ax_role: "button"
+          ax_name: "Check availability"
+        fallback:
+          selector: "button.js-searchbox-submit"
+  search:
+    url_patterns:
+      - "/searchresults"
+    schema:
+      destination:
+        selector: "input[name='ss']"
+        type: "string"
+      result_count:
+        selector: "h1"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "textbox"
+          ax_name: "Where are you going?"
+        fallback:
+          selector: "input[name='ss']"

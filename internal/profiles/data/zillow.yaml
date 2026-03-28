@@ -1,0 +1,60 @@
+domain: "*.zillow.com"
+version: "2026.03.28"
+pages:
+  property:
+    url_patterns:
+      - "/homedetails/"
+    schema:
+      address:
+        selector: "h1[data-test-id='bdp-fulladdress']"
+        type: "string"
+        required: true
+      price:
+        selector: "[data-testid='price'] span"
+        type: "currency"
+      beds:
+        selector: "[data-testid='bed-bath-item']:nth-child(1) strong"
+        type: "number"
+      baths:
+        selector: "[data-testid='bed-bath-item']:nth-child(2) strong"
+        type: "number"
+      sqft:
+        selector: "[data-testid='bed-bath-item']:nth-child(3) strong"
+        type: "number"
+      zestimate:
+        selector: "[data-testid='zestimate-text'] span"
+        type: "currency"
+      status:
+        selector: ".ds-status-details"
+        type: "string"
+      description:
+        selector: "[data-testid='description'] div"
+        type: "string"
+    actions:
+      contact_agent:
+        primary:
+          ax_role: "button"
+          ax_name: "Contact agent"
+        fallback:
+          selector: "[data-testid='contact-agent-button']"
+      save:
+        primary:
+          ax_role: "button"
+          ax_name: "Save"
+        fallback:
+          selector: "[data-testid='save-button']"
+  search:
+    url_patterns:
+      - "/homes/"
+      - "searchQueryState"
+    schema:
+      result_count:
+        selector: ".search-subtitle"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "textbox"
+          ax_name: "Search"
+        fallback:
+          selector: "input[type='text']"

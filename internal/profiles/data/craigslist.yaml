@@ -1,0 +1,51 @@
+domain: "*.craigslist.org"
+version: "2026.03.28"
+pages:
+  listing:
+    url_patterns:
+      - ".html"
+    schema:
+      title:
+        selector: "#titletextonly"
+        type: "string"
+        required: true
+      price:
+        selector: ".price"
+        type: "currency"
+      location:
+        selector: "small"
+        type: "string"
+      body:
+        selector: "#postingbody"
+        type: "string"
+      posted:
+        selector: ".postinginfo time"
+        type: "date"
+      attributes:
+        selector: ".mapAndAttrs .attrgroup span"
+        type: "string"
+    actions:
+      reply:
+        primary:
+          ax_role: "button"
+          ax_name: "reply"
+        fallback:
+          selector: ".reply-button"
+  search:
+    url_patterns:
+      - "/search/"
+      - "/d/"
+    schema:
+      query:
+        selector: "#query"
+        type: "string"
+      result_count:
+        selector: ".search-legend .totalcount"
+        type: "number"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "search"
+        fallback:
+          selector: "#query"

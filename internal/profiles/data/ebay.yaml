@@ -1,0 +1,66 @@
+domain: "*.ebay.com"
+version: "2026.03.28"
+pages:
+  product_detail:
+    url_patterns:
+      - "/itm/"
+    schema:
+      title:
+        selector: "h1.x-item-title__mainTitle span"
+        type: "string"
+        required: true
+      price:
+        selector: ".x-price-primary span"
+        type: "currency"
+      condition:
+        selector: ".x-item-condition-value span"
+        type: "string"
+      seller:
+        selector: ".x-sellercard-atf__info__about-seller a span"
+        type: "string"
+      shipping:
+        selector: ".ux-labels-values--shipping .ux-textspans--BOLD"
+        type: "string"
+      bids:
+        selector: ".x-bid-count a"
+        type: "number"
+      time_left:
+        selector: ".x-timer-module__timer"
+        type: "string"
+    actions:
+      buy_now:
+        primary:
+          ax_role: "link"
+          ax_name: "Buy It Now"
+        fallback:
+          selector: "#binBtn_btn"
+      add_to_cart:
+        primary:
+          ax_role: "link"
+          ax_name: "Add to cart"
+        fallback:
+          selector: "#atcBtn_btn"
+      place_bid:
+        primary:
+          ax_role: "link"
+          ax_name: "Place bid"
+        fallback:
+          selector: "#bidBtn_btn"
+  search_results:
+    url_patterns:
+      - "/sch/"
+      - "/b/"
+    schema:
+      query:
+        selector: "#gh-ac"
+        type: "string"
+      result_count:
+        selector: ".srp-controls__count-heading"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search for anything"
+        fallback:
+          selector: "#gh-ac"

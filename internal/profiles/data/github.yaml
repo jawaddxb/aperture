@@ -1,0 +1,122 @@
+domain: "*.github.com"
+version: "2026.03.28"
+pages:
+  repo:
+    url_patterns:
+      - "/"
+    schema:
+      name:
+        selector: "strong[itemprop='name'] a"
+        type: "string"
+        required: true
+      description:
+        selector: "p.f4.my-3"
+        type: "string"
+      stars:
+        selector: "#repo-stars-counter-star"
+        type: "number"
+      forks:
+        selector: "#repo-network-counter"
+        type: "number"
+      language:
+        selector: "[itemprop='programmingLanguage']"
+        type: "string"
+      license:
+        selector: "a[data-analytics-event*='LICENSE']"
+        type: "string"
+      topics:
+        selector: ".topic-tag"
+        type: "string"
+      last_commit:
+        selector: "relative-time"
+        type: "date"
+    actions:
+      star:
+        primary:
+          ax_role: "button"
+          ax_name: "Star this repository"
+        fallback:
+          selector: ".js-toggler-container .btn-sm"
+      fork:
+        primary:
+          ax_role: "link"
+          ax_name: "Fork"
+        fallback:
+          selector: "#fork-button"
+      clone:
+        primary:
+          ax_role: "button"
+          ax_name: "Code"
+        fallback:
+          selector: "get-repo summary"
+  profile:
+    url_patterns:
+      - "/"
+    schema:
+      name:
+        selector: "span.p-name"
+        type: "string"
+        required: true
+      bio:
+        selector: "[data-bio-text]"
+        type: "string"
+      location:
+        selector: "li[itemprop='homeLocation'] span"
+        type: "string"
+      followers:
+        selector: "a[href$='followers'] span"
+        type: "number"
+      following:
+        selector: "a[href$='following'] span"
+        type: "number"
+      repos:
+        selector: ".UnderlineNav-item:first-child .Counter"
+        type: "number"
+    actions:
+      follow:
+        primary:
+          ax_role: "button"
+          ax_name: "Follow"
+        fallback:
+          selector: "input[value='Follow']"
+  issues:
+    url_patterns:
+      - "/issues"
+    schema:
+      title:
+        selector: ".js-issue-title"
+        type: "string"
+      state:
+        selector: ".State"
+        type: "string"
+    actions:
+      new_issue:
+        primary:
+          ax_role: "link"
+          ax_name: "New issue"
+        fallback:
+          selector: "a[href$='/issues/new/choose'], a[href$='/issues/new']"
+  pull:
+    url_patterns:
+      - "/pull/"
+    schema:
+      title:
+        selector: ".js-issue-title"
+        type: "string"
+        required: true
+      state:
+        selector: ".State"
+        type: "string"
+      author:
+        selector: ".author"
+        type: "string"
+      reviewers:
+        selector: ".reviewers-status-icon + span"
+        type: "string"
+    actions:
+      merge:
+        primary:
+          ax_role: "button"
+          ax_name: "Merge pull request"
+        fallback:
+          selector: ".merge-message .btn-primary"

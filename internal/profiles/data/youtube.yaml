@@ -1,0 +1,78 @@
+domain: "*.youtube.com"
+version: "2026.03.28"
+pages:
+  video:
+    url_patterns:
+      - "/watch"
+    schema:
+      title:
+        selector: "h1.ytd-watch-metadata yt-formatted-string"
+        type: "string"
+        required: true
+      channel:
+        selector: "ytd-channel-name yt-formatted-string a"
+        type: "string"
+      views:
+        selector: "ytd-watch-info-text .ytd-watch-info-text span:first-child"
+        type: "number"
+      published:
+        selector: "ytd-watch-info-text .ytd-watch-info-text span:nth-child(3)"
+        type: "date"
+      likes:
+        selector: "ytd-menu-renderer like-button-view-model button"
+        type: "number"
+      description:
+        selector: "ytd-text-inline-expander .ytd-text-inline-expander span"
+        type: "string"
+      subscribers:
+        selector: "#owner-sub-count"
+        type: "string"
+    actions:
+      like:
+        primary:
+          ax_role: "button"
+          ax_name: "like this video"
+        fallback:
+          selector: "like-button-view-model button"
+      subscribe:
+        primary:
+          ax_role: "button"
+          ax_name: "Subscribe"
+        fallback:
+          selector: "#subscribe-button button"
+  channel:
+    url_patterns:
+      - "/@"
+      - "/channel/"
+    schema:
+      name:
+        selector: "yt-dynamic-text-view-model .yt-core-attributed-string"
+        type: "string"
+        required: true
+      subscribers:
+        selector: "#subscriber-count"
+        type: "string"
+      description:
+        selector: "#description-container"
+        type: "string"
+    actions:
+      subscribe:
+        primary:
+          ax_role: "button"
+          ax_name: "Subscribe"
+        fallback:
+          selector: "#subscribe-button button"
+  search:
+    url_patterns:
+      - "/results"
+    schema:
+      query:
+        selector: "input#search"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "combobox"
+          ax_name: "Search"
+        fallback:
+          selector: "input#search"

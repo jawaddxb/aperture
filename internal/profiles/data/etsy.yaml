@@ -1,0 +1,66 @@
+domain: "*.etsy.com"
+version: "2026.03.28"
+pages:
+  listing:
+    url_patterns:
+      - "/listing/"
+    schema:
+      title:
+        selector: "h1[data-buy-box-listing-title]"
+        type: "string"
+        required: true
+      price:
+        selector: "[data-buy-box-region='price'] p"
+        type: "currency"
+      shop_name:
+        selector: "[data-shop-name]"
+        type: "string"
+      rating:
+        selector: "[data-rating]"
+        type: "rating"
+      reviews:
+        selector: "[data-reviews-count]"
+        type: "number"
+      shipping:
+        selector: "[data-estimated-delivery]"
+        type: "string"
+    actions:
+      add_to_cart:
+        primary:
+          ax_role: "button"
+          ax_name: "Add to cart"
+        fallback:
+          selector: "[data-selector='buy-box-add-to-cart-button']"
+      buy_now:
+        primary:
+          ax_role: "button"
+          ax_name: "Buy it now"
+        fallback:
+          selector: "[data-selector='buy-box-buy-it-now-button']"
+  search_results:
+    url_patterns:
+      - "/search"
+      - "/c/"
+    schema:
+      query:
+        selector: "#global-enhancements-search-query"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search for anything"
+        fallback:
+          selector: "#global-enhancements-search-query"
+  shop:
+    url_patterns:
+      - "/shop/"
+    schema:
+      shop_name:
+        selector: "h1"
+        type: "string"
+        required: true
+      sales_count:
+        selector: "[data-shop-sales-count]"
+        type: "number"
+    actions: {}

@@ -1,0 +1,48 @@
+domain: "*.target.com"
+version: "2026.03.28"
+pages:
+  product_detail:
+    url_patterns:
+      - "/-/A-"
+      - "/p/"
+    schema:
+      title:
+        selector: "h1[data-test='product-title']"
+        type: "string"
+        required: true
+      price:
+        selector: "[data-test='product-price']"
+        type: "currency"
+      rating:
+        selector: "[data-test='ratings'] span"
+        type: "rating"
+      availability:
+        selector: "[data-test='fulfillment-cell'] button"
+        type: "string"
+    actions:
+      add_to_cart:
+        primary:
+          ax_role: "button"
+          ax_name: "Add to cart"
+        fallback:
+          selector: "[data-test='addToCartButton']"
+      pickup:
+        primary:
+          ax_role: "button"
+          ax_name: "Pick it up"
+        fallback:
+          selector: "[data-test='orderPickupButton']"
+  search_results:
+    url_patterns:
+      - "/s?"
+    schema:
+      query:
+        selector: "#search"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "What can we help you find?"
+        fallback:
+          selector: "#search"

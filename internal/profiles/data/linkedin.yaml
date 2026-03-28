@@ -1,0 +1,98 @@
+domain: "*.linkedin.com"
+version: "2026.03.28"
+pages:
+  profile:
+    url_patterns:
+      - "/in/"
+    schema:
+      name:
+        selector: "h1.text-heading-xlarge"
+        type: "string"
+        required: true
+      headline:
+        selector: ".text-body-medium.break-words"
+        type: "string"
+      location:
+        selector: ".text-body-small.inline.t-black--light.break-words"
+        type: "string"
+      connections:
+        selector: "span.t-bold"
+        type: "string"
+      about:
+        selector: "#about ~ div .inline-show-more-text span[aria-hidden='true']"
+        type: "string"
+    actions:
+      connect:
+        primary:
+          ax_role: "button"
+          ax_name: "Connect"
+        fallback:
+          selector: ".pvs-profile-actions button.artdeco-button--primary"
+      message:
+        primary:
+          ax_role: "button"
+          ax_name: "Message"
+        fallback:
+          selector: ".pvs-profile-actions button[aria-label*='Message']"
+  company:
+    url_patterns:
+      - "/company/"
+    schema:
+      name:
+        selector: "h1.org-top-card-summary__title span"
+        type: "string"
+        required: true
+      industry:
+        selector: ".org-top-card-summary-info-list__info-item"
+        type: "string"
+      size:
+        selector: ".org-about-us-organization-description__staff-count-range"
+        type: "string"
+      description:
+        selector: ".org-about-us-organization-description__text p"
+        type: "string"
+    actions:
+      follow:
+        primary:
+          ax_role: "button"
+          ax_name: "Follow"
+        fallback:
+          selector: ".org-top-card-primary-actions button"
+  job:
+    url_patterns:
+      - "/jobs/view/"
+    schema:
+      title:
+        selector: "h1.t-24.t-bold"
+        type: "string"
+        required: true
+      company:
+        selector: ".job-details-jobs-unified-top-card__company-name a"
+        type: "string"
+      location:
+        selector: ".job-details-jobs-unified-top-card__bullet"
+        type: "string"
+      posted:
+        selector: ".job-details-jobs-unified-top-card__posted-date"
+        type: "string"
+    actions:
+      apply:
+        primary:
+          ax_role: "button"
+          ax_name: "Easy Apply"
+        fallback:
+          selector: ".jobs-apply-button"
+  search:
+    url_patterns:
+      - "/search/"
+    schema:
+      query:
+        selector: "input.search-global-typeahead__input"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "combobox"
+          ax_name: "Search"
+        fallback:
+          selector: "input.search-global-typeahead__input"
