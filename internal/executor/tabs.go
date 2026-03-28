@@ -40,6 +40,13 @@ func (e *NewTabExecutor) Execute(
 
 	url, _ := params["url"].(string)
 
+	// SSRF protection: validate URL before opening new tab.
+	if url != "" {
+		if err := validateNavigateURL(url); err != nil {
+			return failResult(result, start, fmt.Errorf("url_blocked: %w", err)), nil
+		}
+	}
+
 	tab, err := e.tabs.NewTab(ctx, url)
 	if err != nil {
 		return failResult(result, start, fmt.Errorf("newTab: %w", err)), nil

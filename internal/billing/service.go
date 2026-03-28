@@ -81,6 +81,11 @@ func (s *AccountService) HasAccounts() bool {
 // CreateAccount creates a new account with an initial API key and credit balance.
 // The first key is admin ONLY if no other accounts exist (bootstrap). Otherwise it's a regular key.
 func (s *AccountService) CreateAccount(name, email, plan string, initialCredits int) (*Account, string, error) {
+	// Clamp credits to non-negative.
+	if initialCredits < 0 {
+		initialCredits = 0
+	}
+
 	id := "acct_" + randomHex(12)
 	key := "apt_" + randomHex(32)
 	now := time.Now()
@@ -183,6 +188,10 @@ func (s *AccountService) ListAccounts(offset, limit int) ([]Account, int, error)
 
 // AddCredits adds credits to an account and records a ledger entry.
 func (s *AccountService) AddCredits(accountID string, amount int, reason string) (int, error) {
+	if amount <= 0 {
+		return 0, fmt.Errorf("amount must be positive (got %d)", amount)
+	}
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("begin tx: %w", err)

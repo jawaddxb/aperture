@@ -82,6 +82,12 @@ func (h *ActionHandlers) Screenshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SSRF protection: validate URL before screenshot.
+	if err := validateScreenshotURL(req.URL); err != nil {
+		writeError(w, http.StatusBadRequest, "URL_BLOCKED", err.Error())
+		return
+	}
+
 	if h.screenshot == nil {
 		writeError(w, http.StatusNotImplemented, "NOT_IMPLEMENTED", "screenshot service not configured")
 		return

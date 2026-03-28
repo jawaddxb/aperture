@@ -29,9 +29,9 @@ func validateNavigateURL(rawURL string) error {
 		return nil
 	}
 
-	// Only allow http and https schemes.
+	// Only allow http and https schemes (whitelist approach).
 	if scheme != "http" && scheme != "https" {
-		return fmt.Errorf("blocked scheme %q: only http/https allowed", u.Scheme)
+		return fmt.Errorf("blocked scheme %q: only http/https allowed", scheme)
 	}
 
 	// Block URLs with embedded credentials.
