@@ -79,6 +79,7 @@ func (s *AccountService) HasAccounts() bool {
 }
 
 // CreateAccount creates a new account with an initial API key and credit balance.
+// The first key is admin ONLY if no other accounts exist (bootstrap). Otherwise it's a regular key.
 func (s *AccountService) CreateAccount(name, email, plan string, initialCredits int) (*Account, string, error) {
 	id := "acct_" + randomHex(12)
 	key := "apt_" + randomHex(32)
@@ -99,10 +100,12 @@ func (s *AccountService) CreateAccount(name, email, plan string, initialCredits 
 		return nil, "", fmt.Errorf("insert account: %w", err)
 	}
 
+	// First account ever = bootstrap admin. Subsequent accounts get regular keys.
+	isFirstAccount := !s.HasAccounts()
 	_, err = tx.Exec(
 		`INSERT INTO api_keys (key, account_id, label, is_admin, created_at)
 		 VALUES (?, ?, ?, ?, ?)`,
-		key, id, "default", true, now,
+		key, id, "default", isFirstAccount, now,
 	)
 	if err != nil {
 		return nil, "", fmt.Errorf("insert api key: %w", err)

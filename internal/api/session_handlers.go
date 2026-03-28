@@ -46,10 +46,11 @@ type SessionDetailResponse struct {
 
 // ExecuteSessionResponse is the JSON body returned after executing a session.
 type ExecuteSessionResponse struct {
-	Success    bool                `json:"success"`
-	Steps      []domain.StepResult `json:"steps"`
-	DurationMS int64               `json:"duration_ms"`
-	TotalCost  int                 `json:"total_cost"`
+	Success           bool                `json:"success"`
+	Steps             []domain.StepResult `json:"steps"`
+	DurationMS        int64               `json:"duration_ms"`
+	TotalCost         int                 `json:"total_cost"`
+	CreditsRemaining  int                 `json:"credits_remaining,omitempty"`
 }
 
 // Create handles POST /api/v1/sessions.
@@ -129,10 +130,11 @@ func (h *SessionHandlers) Execute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, ExecuteSessionResponse{
-		Success:    result.Success,
-		Steps:      result.Steps,
-		DurationMS: result.Duration.Milliseconds(),
-		TotalCost:  result.TotalCost,
+		Success:          result.Success,
+		Steps:            result.Steps,
+		DurationMS:       result.Duration.Milliseconds(),
+		TotalCost:        result.TotalCost,
+		CreditsRemaining: result.CreditsRemaining,
 	})
 }
 
