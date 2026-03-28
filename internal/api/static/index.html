@@ -266,9 +266,9 @@ tailwind.config = {
           <a href="#demo" class="text-lg tracking-[0.05em] text-muted-foreground hover:text-foreground transition-colors font-akshar">DEMO</a>
           <a href="#solution" class="text-lg tracking-[0.05em] text-muted-foreground hover:text-foreground transition-colors font-akshar">SOLUTION</a>
           <a href="#pricing" class="text-lg tracking-[0.05em] text-muted-foreground hover:text-foreground transition-colors font-akshar">PRICING</a>
-          <a href="#docs" class="text-lg tracking-[0.05em] text-muted-foreground hover:text-foreground transition-colors font-akshar">DOCS</a>
+          <a href="https://github.com/jawaddxb/aperture#readme" target="_blank" class="text-lg tracking-[0.05em] text-muted-foreground hover:text-foreground transition-colors font-akshar">DOCS</a>
         </div>
-        <button class="hidden md:block border border-foreground/10 text-muted-foreground hover:bg-[hsl(var(--muted-foreground))] hover:text-background uppercase tracking-[0.05em] font-normal text-xl rounded-none font-akshar px-6 py-2.5 transition-colors">GET IN TOUCH</button>
+        <a href="mailto:hello@ala.xyz?subject=Aperture%20Inquiry" class="hidden md:block border border-foreground/10 text-muted-foreground hover:bg-[hsl(var(--muted-foreground))] hover:text-background uppercase tracking-[0.05em] font-normal text-xl rounded-none font-akshar px-6 py-2.5 transition-colors">GET IN TOUCH</a>
         <!-- Hamburger -->
         <button id="hamburger" class="md:hidden flex flex-col gap-1.5 p-2" aria-label="Menu">
           <span class="block w-6 h-0.5 bg-foreground"></span>
@@ -282,8 +282,8 @@ tailwind.config = {
         <a href="#demo" class="text-lg tracking-[0.05em] text-muted-foreground font-akshar">DEMO</a>
         <a href="#solution" class="text-lg tracking-[0.05em] text-muted-foreground font-akshar">SOLUTION</a>
         <a href="#pricing" class="text-lg tracking-[0.05em] text-muted-foreground font-akshar">PRICING</a>
-        <a href="#docs" class="text-lg tracking-[0.05em] text-muted-foreground font-akshar">DOCS</a>
-        <button class="border border-foreground/10 text-muted-foreground uppercase tracking-[0.05em] font-normal text-lg rounded-none font-akshar px-6 py-2.5">GET IN TOUCH</button>
+        <a href="https://github.com/jawaddxb/aperture#readme" target="_blank" class="text-lg tracking-[0.05em] text-muted-foreground font-akshar">DOCS</a>
+        <a href="mailto:hello@ala.xyz?subject=Aperture%20Inquiry" class="border border-foreground/10 text-muted-foreground uppercase tracking-[0.05em] font-normal text-lg rounded-none font-akshar px-6 py-2.5">GET IN TOUCH</a>
       </div>
 
       <!-- Hero Content -->
@@ -312,7 +312,7 @@ tailwind.config = {
             <span class="relative z-10">GET STARTED</span>
           </a>
           <a href="https://github.com/jawaddxb/aperture" target="_blank" class="border border-foreground/10 text-muted-foreground hover:bg-[hsl(var(--muted-foreground))] hover:text-background uppercase tracking-[0.1em] font-normal text-base px-10 py-4 font-akshar transition-colors inline-block w-full sm:w-auto text-center">
-            VIEW DOCS
+            VIEW ON GITHUB
           </a>
         </div>
       </div>
@@ -390,6 +390,56 @@ tailwind.config = {
       <p class="text-center text-muted-foreground font-akshar mt-10 text-base md:text-lg reveal">
         No Playwright. No selectors. No proxy config. Just a goal and a response.
       </p>
+    </div>
+  </section>
+
+  <!-- ═══════════ SECTION 2.5: HOW IT WORKS ═══════════ -->
+  <section class="py-20 md:py-28 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="reveal">
+        <p class="font-akshar uppercase tracking-[0.12em] text-muted-foreground text-sm mb-4 text-center">How It Works</p>
+        <h2 class="heading-gradient text-3xl md:text-4xl lg:text-5xl font-normal text-center mb-16" style="letter-spacing:-0.04em;">Three steps. One API call.</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-0 stagger-container relative">
+        <!-- Connector lines (desktop only) -->
+        <div class="hidden md:block absolute top-16 left-[calc(33.3%-24px)] right-[calc(33.3%-24px)] h-[2px] bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 z-0"></div>
+
+        <!-- Step 1 -->
+        <div class="stagger-child text-center relative z-10 px-6 mb-8 md:mb-0">
+          <div class="w-12 h-12 rounded-full bg-foreground text-white flex items-center justify-center text-lg font-bold mx-auto mb-6 font-akshar">1</div>
+          <h3 class="text-foreground text-lg font-semibold mb-3">Your agent sends a goal</h3>
+          <p class="text-muted-foreground text-sm leading-relaxed">Natural language or structured JSON. "Get the price of AirPods Pro on Amazon." One POST request.</p>
+          <div class="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 mt-4 text-left overflow-x-auto">
+<pre>POST /v1/execute
+{"goal": "Get AirPods Pro price"}</pre>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="stagger-child text-center relative z-10 px-6 mb-8 md:mb-0">
+          <div class="w-12 h-12 rounded-full bg-foreground text-white flex items-center justify-center text-lg font-bold mx-auto mb-6 font-akshar">2</div>
+          <h3 class="text-foreground text-lg font-semibold mb-3">Aperture handles everything</h3>
+          <p class="text-muted-foreground text-sm leading-relaxed">Policy check → stealth browser launch → anti-bot bypass → page navigation → data extraction. All invisible to your agent.</p>
+          <div class="flex flex-wrap justify-center gap-2 mt-4">
+            <span class="text-xs font-akshar uppercase tracking-wider bg-green-50 text-green-700 px-2 py-1 rounded">Policy ✓</span>
+            <span class="text-xs font-akshar uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-1 rounded">Stealth ✓</span>
+            <span class="text-xs font-akshar uppercase tracking-wider bg-amber-50 text-amber-700 px-2 py-1 rounded">Extract ✓</span>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="stagger-child text-center relative z-10 px-6">
+          <div class="w-12 h-12 rounded-full bg-foreground text-white flex items-center justify-center text-lg font-bold mx-auto mb-6 font-akshar">3</div>
+          <h3 class="text-foreground text-lg font-semibold mb-3">Typed JSON back</h3>
+          <p class="text-muted-foreground text-sm leading-relaxed">Structured data your agent can immediately use. No parsing. No screenshots. No re-prompting the LLM.</p>
+          <div class="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 mt-4 text-left overflow-x-auto">
+<pre>{"title": "AirPods Pro",
+ "price": 249.99,
+ "currency": "USD"}</pre>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -515,6 +565,80 @@ tailwind.config = {
     </div>
   </section>
 
+  <!-- ═══════════ SECTION 5.5: SDK + CREDENTIAL VAULT ═══════════ -->
+  <section class="py-20 md:py-28 px-6 bg-gray-50">
+    <div class="max-w-6xl mx-auto">
+      <div class="reveal">
+        <p class="font-akshar uppercase tracking-[0.12em] text-muted-foreground text-sm mb-4 text-center">Developer Experience</p>
+        <h2 class="heading-gradient text-3xl md:text-4xl lg:text-5xl font-normal text-center mb-16" style="letter-spacing:-0.04em;">Built for developers who ship</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8 stagger-container">
+        <!-- TypeScript SDK -->
+        <div class="stagger-child card-lift card-spotlight bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-3xl">📦</span>
+            <div>
+              <h3 class="text-foreground text-xl font-semibold">TypeScript SDK</h3>
+              <p class="text-xs font-akshar uppercase tracking-wider text-muted-foreground">npm install @aperture/sdk</p>
+            </div>
+          </div>
+          <p class="text-muted-foreground text-sm leading-relaxed mb-5">Fluent API with full type safety. Zod-validated responses. Works with any agent framework.</p>
+          <div class="bg-gray-900 rounded-lg p-5 font-mono text-sm text-gray-100 overflow-x-auto">
+<pre><span class="text-blue-400">import</span> { Aperture } <span class="text-blue-400">from</span> <span class="text-green-400">'@aperture/sdk'</span>
+
+<span class="text-blue-400">const</span> client = <span class="text-blue-400">new</span> <span class="text-amber-300">Aperture</span>({ apiKey: <span class="text-green-400">'ap_...'</span> })
+
+<span class="text-blue-400">const</span> result = <span class="text-blue-400">await</span> client
+  .<span class="text-amber-300">execute</span>(<span class="text-green-400">'Get AirPods Pro price on Amazon'</span>)
+  .<span class="text-amber-300">withPolicy</span>(<span class="text-green-400">'prod-agent'</span>)
+  .<span class="text-amber-300">withBudget</span>(<span class="text-amber-200">100</span>)
+  .<span class="text-amber-300">run</span>()
+
+console.<span class="text-amber-300">log</span>(result.data)
+<span class="text-gray-500">// { title: "AirPods Pro", price: 249.99, ... }</span></pre>
+          </div>
+        </div>
+
+        <!-- Credential Vault -->
+        <div class="stagger-child card-lift card-spotlight bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-3xl">🔐</span>
+            <div>
+              <h3 class="text-foreground text-xl font-semibold">Credential Vault</h3>
+              <p class="text-xs font-akshar uppercase tracking-wider text-muted-foreground">AES-256-GCM Encrypted</p>
+            </div>
+          </div>
+          <p class="text-muted-foreground text-sm leading-relaxed mb-5">Store credentials once, use them across sessions. Auto-login to any site. Agents never see raw passwords — Aperture injects them at runtime inside the browser.</p>
+
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 bg-gray-50 rounded-lg p-4">
+              <span class="text-green-500 mt-0.5">✓</span>
+              <div>
+                <p class="text-sm font-semibold text-foreground">Store once, use forever</p>
+                <p class="text-xs text-muted-foreground">Add credentials via API. Aperture auto-detects login pages and authenticates.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 bg-gray-50 rounded-lg p-4">
+              <span class="text-green-500 mt-0.5">✓</span>
+              <div>
+                <p class="text-sm font-semibold text-foreground">Zero-knowledge to agents</p>
+                <p class="text-xs text-muted-foreground">Credentials never leave the vault. Injected directly into browser fields at runtime.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 bg-gray-50 rounded-lg p-4">
+              <span class="text-green-500 mt-0.5">✓</span>
+              <div>
+                <p class="text-sm font-semibold text-foreground">Pattern-matched login</p>
+                <p class="text-xs text-muted-foreground">Site profiles know where login forms are. Amazon, Google, Shopify — pre-configured.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══════════ SECTION 6: COMPARISON ═══════════ -->
   <section class="py-20 md:py-28 px-6 bg-gray-50">
     <div class="max-w-6xl mx-auto">
@@ -596,7 +720,7 @@ tailwind.config = {
           <h3 class="text-foreground text-lg font-semibold mb-1">curl</h3>
           <p class="text-muted-foreground text-xs font-akshar uppercase tracking-wider mb-4">10 seconds</p>
           <div class="bg-gray-900 rounded-lg p-4 font-mono text-xs text-gray-100 overflow-x-auto">
-<pre>curl -X POST https://aperture.dev/v1/execute \
+<pre>curl -X POST https://api.aperture.dev/v1/execute \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{"goal": "Get the title of example.com"}'</pre>
           </div>
@@ -620,7 +744,7 @@ curl localhost:8080/health</pre>
           <h3 class="text-foreground text-lg font-semibold mb-1">Cloud API Key</h3>
           <p class="text-muted-foreground text-xs font-akshar uppercase tracking-wider mb-4">30 seconds</p>
           <p class="text-muted-foreground text-sm mb-6 flex-1">Sign up → Get API key → Call the API. No infrastructure required.</p>
-          <button class="relative uppercase tracking-[0.15em] font-normal text-sm px-8 py-3 transition-opacity hover:opacity-90 font-akshar w-full" style="background-color: #000000; color: #ffffff;">
+          <a href="mailto:hello@ala.xyz?subject=Aperture%20Cloud%20API%20Key%20Request" class="relative uppercase tracking-[0.15em] font-normal text-sm px-8 py-3 transition-opacity hover:opacity-90 font-akshar w-full inline-block text-center" style="background-color: #000000; color: #ffffff;">
             <span class="absolute bg-background" style="top:4px;left:4px;width:10px;height:1px;"></span>
             <span class="absolute bg-background" style="top:4px;left:4px;width:1px;height:10px;"></span>
             <span class="absolute bg-background" style="top:4px;right:4px;width:10px;height:1px;"></span>
@@ -629,8 +753,8 @@ curl localhost:8080/health</pre>
             <span class="absolute bg-background" style="bottom:4px;left:4px;width:1px;height:10px;"></span>
             <span class="absolute bg-background" style="bottom:4px;right:4px;width:10px;height:1px;"></span>
             <span class="absolute bg-background" style="bottom:4px;right:4px;width:1px;height:10px;"></span>
-            <span class="relative z-10">GET API KEY</span>
-          </button>
+            <span class="relative z-10">REQUEST API KEY</span>
+          </a>
         </div>
       </div>
     </div>
@@ -654,7 +778,7 @@ curl localhost:8080/health</pre>
           <p class="text-muted-foreground text-sm">Full engine. Your LLM key. Unlimited.</p>
         </div>
         <!-- Cloud -->
-        <div class="stagger-child glow-card spotlight-card bg-white border-2 border-foreground rounded-xl p-8 shadow-sm text-center relative">
+        <div class="stagger-child card-lift card-spotlight bg-white border-2 border-foreground rounded-xl p-8 shadow-sm text-center relative">
           <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-foreground text-white text-xs font-akshar uppercase tracking-wider px-3 py-1 rounded-full">Popular</span>
           <h3 class="font-akshar text-lg uppercase tracking-[0.08em] text-muted-foreground mb-2">Cloud</h3>
           <div class="text-4xl font-bold text-foreground mb-1 price-reveal">$19<span class="text-lg font-normal text-muted-foreground">/mo</span></div>
@@ -722,7 +846,7 @@ curl localhost:8080/health</pre>
           <ul class="space-y-2 text-sm">
             <li><a href="#solution" class="hover:text-gray-200 transition-colors">Features</a></li>
             <li><a href="#pricing" class="hover:text-gray-200 transition-colors">Pricing</a></li>
-            <li><a href="#docs" class="hover:text-gray-200 transition-colors">Docs</a></li>
+            <li><a href="#demo" class="hover:text-gray-200 transition-colors">Demo</a></li>
           </ul>
         </div>
         <!-- Developers -->
@@ -730,16 +854,16 @@ curl localhost:8080/health</pre>
           <h4 class="font-akshar text-sm uppercase tracking-[0.1em] text-gray-300 mb-4">Developers</h4>
           <ul class="space-y-2 text-sm">
             <li><a href="https://github.com/jawaddxb/aperture" target="_blank" class="hover:text-gray-200 transition-colors">GitHub</a></li>
-            <li><a href="#" class="hover:text-gray-200 transition-colors">SDK</a></li>
-            <li><a href="#" class="hover:text-gray-200 transition-colors">API Reference</a></li>
+            <li><a href="https://github.com/jawaddxb/aperture#readme" target="_blank" class="hover:text-gray-200 transition-colors">Documentation</a></li>
+            <li><a href="https://www.npmjs.com/package/@aperture/sdk" target="_blank" class="hover:text-gray-200 transition-colors">TypeScript SDK</a></li>
           </ul>
         </div>
         <!-- Company -->
         <div>
           <h4 class="font-akshar text-sm uppercase tracking-[0.1em] text-gray-300 mb-4">Company</h4>
           <ul class="space-y-2 text-sm">
-            <li><a href="#" class="hover:text-gray-200 transition-colors">About</a></li>
-            <li><a href="#" class="hover:text-gray-200 transition-colors">Contact</a></li>
+            <li><a href="https://ala.xyz" target="_blank" class="hover:text-gray-200 transition-colors">ALA</a></li>
+            <li><a href="mailto:hello@ala.xyz?subject=Aperture%20Inquiry" class="hover:text-gray-200 transition-colors">Contact</a></li>
           </ul>
         </div>
       </div>
