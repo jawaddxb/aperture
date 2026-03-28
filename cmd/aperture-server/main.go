@@ -23,6 +23,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/observe"
 	"github.com/ApertureHQ/aperture/internal/planner"
 	"github.com/ApertureHQ/aperture/internal/policy"
+	"github.com/ApertureHQ/aperture/internal/profiles"
 	"github.com/ApertureHQ/aperture/internal/resolver"
 	"github.com/ApertureHQ/aperture/internal/sequencer"
 	"github.com/ApertureHQ/aperture/internal/session"
@@ -54,10 +55,24 @@ func main() {
 
 	slog.Info("browser pool ready", "size", pool.Size(), "available", pool.Available())
 
+	// xBPP Policy Engine: gates every agent action against configurable rules.
+	policyEngine := policy.NewInMemoryPolicyEngine()
+	slog.Info("xBPP policy engine enabled")
+
+	// Site profiles: YAML-defined domain intelligence for structured extraction.
+	var profileMgr domain.SiteProfileManager
+	if pm, err := profiles.NewYAMLProfileManager(); err != nil {
+		slog.Warn("profile manager failed to load", "error", err)
+		profileMgr = profiles.NewNoopProfileManager()
+	} else {
+		profileMgr = pm
+		slog.Info("site profiles loaded", "count", len(pm.Profiles()))
+	}
+
 	// Bootstrap the full session manager with planner + sequencer.
 	llmClient := buildLLMClient(cfg)
 	hitlMgr := executor.NewDefaultHITLManager()
-	reg := buildRegistry(pool, llmClient, hitlMgr)
+	reg := buildRegistry(pool, llmClient, hitlMgr, profileMgr)
 	seq := sequencer.NewDefaultSequencer(sequencer.Config{Registry: reg})
 	p := buildPlanner(cfg)
 
@@ -77,10 +92,6 @@ func main() {
 		authPersist = ap
 		slog.Info("auth persistence enabled")
 	}
-
-	// xBPP Policy Engine: gates every agent action against configurable rules.
-	policyEngine := policy.NewInMemoryPolicyEngine()
-	slog.Info("xBPP policy engine enabled")
 
 	// Metrics collector for action timing and success rates.
 	metrics := observe.NewInMemoryMetrics()
@@ -113,6 +124,7 @@ func main() {
 		ProgressEmitter:   emitter,
 		MetricsCollector:  metrics,
 		PolicyEngine:      policyEngine,
+		ProfileManager:    profileMgr,
 		Auth:              buildAuthConfig(cfg),
 		RateLimit:         api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},
 		CORSOrigins:       cfg.API.CORSOrigins,
@@ -152,11 +164,15 @@ func main() {
 
 // buildRegistry constructs the default executor registry wired to the pool.
 // If llm is non-nil, the extract executor is included for structured data extraction.
-func buildRegistry(pool domain.BrowserPool, llm domain.LLMClient, hitlMgr *executor.DefaultHITLManager) map[string]domain.Executor {
+func buildRegistry(pool domain.BrowserPool, llm domain.LLMClient, hitlMgr *executor.DefaultHITLManager, profileMgr domain.SiteProfileManager) map[string]domain.Executor {
 	res := resolver.NewUnifiedResolver()
 	tabMgr := browserpool.NewPoolTabProxy(pool)
+	var navOpts []executor.NavigateOption
+	if profileMgr != nil {
+		navOpts = append(navOpts, executor.WithProfileManager(profileMgr))
+	}
 	reg := map[string]domain.Executor{
-		"navigate":   executor.NewNavigateExecutor(),
+		"navigate":   executor.NewNavigateExecutor(navOpts...),
 		"click":      executor.NewClickExecutor(res),
 		"type":       executor.NewTypeExecutor(res),
 		"screenshot": executor.NewScreenshotExecutor(),

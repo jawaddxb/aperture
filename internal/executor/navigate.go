@@ -33,11 +33,25 @@ const defaultNavigateTimeout = 30 * time.Second
 // NavigateExecutor navigates a browser instance to a URL and waits for
 // page readiness according to a configurable wait strategy.
 // It implements domain.Executor.
-type NavigateExecutor struct{}
+type NavigateExecutor struct {
+	profileMgr domain.SiteProfileManager // optional; nil = no profile matching
+}
 
 // NewNavigateExecutor constructs a NavigateExecutor.
-func NewNavigateExecutor() *NavigateExecutor {
-	return &NavigateExecutor{}
+func NewNavigateExecutor(opts ...NavigateOption) *NavigateExecutor {
+	e := &NavigateExecutor{}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
+}
+
+// NavigateOption configures the NavigateExecutor.
+type NavigateOption func(*NavigateExecutor)
+
+// WithProfileManager sets the profile manager for site intelligence.
+func WithProfileManager(pm domain.SiteProfileManager) NavigateOption {
+	return func(e *NavigateExecutor) { e.profileMgr = pm }
 }
 
 // Execute navigates to the URL in params["url"] and waits using params["wait"].
@@ -85,6 +99,17 @@ func (e *NavigateExecutor) Execute(
 	pageState, err := navigate(ctx, inst.Context(), rawURL, wait, selector)
 	if err != nil {
 		return failResult(result, start, fmt.Errorf("navigate: %w", err)), nil
+	}
+
+	// Site profile matching: enrich response with structured data if a profile matches.
+	if e.profileMgr != nil && pageState != nil {
+		if match := e.profileMgr.Match(pageState.URL); match != nil {
+			pageState.ProfileMatched = match.ProfileDomain
+			pageState.AvailableActions = e.profileMgr.AvailableActions(match)
+			if extracted, err := e.profileMgr.Extract(ctx, match, inst); err == nil && len(extracted) > 0 {
+				pageState.StructuredData = extracted
+			}
+		}
 	}
 
 	result.Success = true

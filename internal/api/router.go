@@ -48,6 +48,9 @@ type RouterConfig struct {
 	// PolicyEngine, when set, enables xBPP policy CRUD endpoints.
 	PolicyEngine domain.PolicyEngine
 
+	// ProfileManager, when set, enables site profile listing endpoint.
+	ProfileManager domain.SiteProfileManager
+
 	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
 	Auth AuthConfig
 
@@ -131,6 +134,11 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 			r.Get("/policies/{agent_id}", ph.Get)
 			r.Put("/policies/{agent_id}", ph.Upsert)
 			r.Delete("/policies/{agent_id}", ph.Delete)
+		}
+
+		if cfg.ProfileManager != nil {
+			prh := NewProfileHandlers(cfg.ProfileManager)
+			r.Get("/profiles", prh.List)
 		}
 
 		RegisterBridgeRoutes(r, BridgeConfig{

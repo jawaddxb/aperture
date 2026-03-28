@@ -1,0 +1,22 @@
+domain: "*.google.com"
+version: "2026.03.28"
+pages:
+  search:
+    url_patterns:
+      - "/search"
+    schema:
+      query:
+        selector: "textarea[name=q]"
+        type: "string"
+      result_count:
+        selector: "#result-stats"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search"
+      first_result:
+        primary:
+          ax_role: "link"
+          ax_name: ""

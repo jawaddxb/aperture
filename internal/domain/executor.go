@@ -46,6 +46,15 @@ type PageState struct {
 	// May be 0 when the page was not navigated (e.g. after a click that
 	// does not trigger a new navigation).
 	StatusCode int
+
+	// ProfileMatched is the domain pattern of the matched site profile, if any.
+	ProfileMatched string `json:"profile_matched,omitempty"`
+
+	// StructuredData holds extracted fields from a matched site profile.
+	StructuredData map[string]interface{} `json:"structured_data,omitempty"`
+
+	// AvailableActions lists semantic actions available on the matched page.
+	AvailableActions []string `json:"available_actions,omitempty"`
 }
 
 // Executor executes a single browser action inside a live BrowserInstance.

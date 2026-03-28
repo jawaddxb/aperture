@@ -1,0 +1,52 @@
+domain: "*.amazon.com"
+version: "2026.03.28"
+pages:
+  product_detail:
+    url_patterns:
+      - "/dp/"
+      - "/gp/product/"
+    schema:
+      title:
+        selector: "#productTitle"
+        type: "string"
+        required: true
+      price:
+        selector: ".a-price .a-offscreen"
+        type: "currency"
+      rating:
+        selector: "#acrPopover"
+        ax_role: "button"
+        ax_name: "out of 5 stars"
+        type: "rating"
+      availability:
+        selector: "#availability span"
+        type: "string"
+      review_count:
+        selector: "#acrCustomerReviewText"
+        type: "number"
+    actions:
+      add_to_cart:
+        primary:
+          ax_role: "button"
+          ax_name: "Add to Cart"
+        fallback:
+          selector: "#add-to-cart-button"
+      buy_now:
+        primary:
+          ax_role: "button"
+          ax_name: "Buy Now"
+        fallback:
+          selector: "#buy-now-button"
+  search_results:
+    url_patterns:
+      - "/s?"
+      - "/s/"
+    schema:
+      query:
+        selector: "#twotabsearchtextbox"
+        type: "string"
+    actions:
+      search:
+        primary:
+          ax_role: "searchbox"
+          ax_name: "Search"

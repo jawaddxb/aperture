@@ -1,0 +1,24 @@
+domain: "*.myshopify.com"
+version: "2026.03.28"
+pages:
+  product:
+    url_patterns:
+      - "/products/"
+    schema:
+      title:
+        selector: "h1.product__title, h1.product-single__title"
+        type: "string"
+        required: true
+      price:
+        selector: ".price__regular .price-item, .product__price"
+        type: "currency"
+      availability:
+        selector: ".product-form__submit"
+        type: "string"
+    actions:
+      add_to_cart:
+        primary:
+          ax_role: "button"
+          ax_name: "Add to cart"
+        fallback:
+          selector: "button[name=add]"
