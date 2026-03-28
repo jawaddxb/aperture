@@ -1,33 +1,42 @@
-# aperture.yaml.example — Copy to aperture.yaml and configure for your environment.
-# All values can be overridden with APERTURE_* environment variables.
-# Example: APERTURE_SERVER_PORT=9090 overrides server.port below.
+# Aperture Configuration
+# Copy to aperture.yaml and fill in your values.
 
 server:
-  # TCP port to listen on (default: 8080)
-  port: 8080
-  # Host/IP to bind to (default: 0.0.0.0)
   host: "0.0.0.0"
+  port: 8080
 
 browser:
-  # Number of pre-warmed Chromium instances in the pool (default: 5)
   pool_size: 5
-  # REQUIRED: Absolute path to Chromium or Google Chrome binary.
-  # On macOS: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-  # On Linux: /usr/bin/chromium or /usr/bin/chromium-browser
-  chromium_path: "/usr/bin/chromium"
+  chromium_path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  # proxy_url: "http://user:pass@proxy:8080"
 
-redis:
-  # Redis connection URL for agent KV store (default: redis://localhost:6379)
-  url: "redis://localhost:6379"
-
-sqlite:
-  # Path to the SQLite database file (default: aperture.db)
-  path: "aperture.db"
-
-log:
-  # Log level: debug, info, warn, error (default: info)
-  level: "info"
+llm:
+  provider: "openai"
+  model: "openai/gpt-4o-mini"         # Use provider/model format for OpenRouter
+  api_key: ""                           # Your OpenRouter or OpenAI key
+  base_url: "https://openrouter.ai/api" # Remove for direct OpenAI
 
 api:
-  # Prefix used for API key generation and validation (default: apt_)
   key_prefix: "apt_"
+  require_auth: false                   # Set true for production
+  keys: []                              # Add your API keys: ["apt_xxx", "apt_yyy"]
+  rate_limit_rpm: 0                     # Requests per minute per IP (0 = unlimited)
+  cors_origins: []                      # Allowed origins (empty = allow all)
+
+bridge:
+  max_concurrent_tasks: 10
+  task_timeout_seconds: 120
+
+stealth:
+  enabled: true
+  hide_webdriver: true
+  canvas_noise: true
+  block_webrtc: true
+  random_viewport: true
+  mock_plugins: true
+  timezone: ""                          # e.g., "America/New_York"
+  geo_latitude: 0
+  geo_longitude: 0
+
+log:
+  level: "info"                         # debug, info, warn, error

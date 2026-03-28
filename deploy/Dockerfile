@@ -1,6 +1,6 @@
 # Aperture — Multi-stage Docker build
 # Stage 1: Build Go binary
-FROM golang:1.22-bookworm AS builder
+FROM golang:1.26-bookworm AS builder
 
 WORKDIR /build
 COPY go.mod go.sum ./
