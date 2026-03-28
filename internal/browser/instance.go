@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/fetch"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 
 	"github.com/ApertureHQ/aperture/internal/domain"
@@ -117,10 +118,17 @@ func (i *instance) Close() error {
 }
 
 // reset clears tab state so the instance can be safely reused.
-// It replaces the tab context with a fresh one, discarding previous session data.
+// It replaces the tab context with a fresh one, discarding previous session data,
+// and clears browser-level cookies and cache to prevent cross-session leakage.
 func (i *instance) reset() error {
 	i.tabCancel()
 	tabCtx, tabCancel := chromedp.NewContext(i.allocCtx)
+
+	// Clear browser-level cookies and cache. These persist across tab contexts
+	// within the same Chromium process. Best-effort — if the browser is in a
+	// bad state, the new tab creation above already isolates us.
+	_ = chromedp.Run(tabCtx, network.ClearBrowserCookies())
+	_ = chromedp.Run(tabCtx, network.ClearBrowserCache())
 
 	// Re-apply stealth to new context.
 	if err := ApplyStealth(tabCtx, i.stealth); err != nil {
@@ -132,6 +140,10 @@ func (i *instance) reset() error {
 		tabCancel()
 		return fmt.Errorf("instance %s: reset navigation failed: %w", i.id, err)
 	}
+
+	// Best-effort clear of localStorage/sessionStorage on the blank page.
+	_ = chromedp.Run(tabCtx, chromedp.Evaluate(`try{localStorage.clear();sessionStorage.clear();}catch(e){}`, nil))
+
 	i.tabCtx = tabCtx
 	i.tabCancel = tabCancel
 	return nil

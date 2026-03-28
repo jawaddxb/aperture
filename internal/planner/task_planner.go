@@ -39,19 +39,24 @@ const maxReplanAttempts = 3
 // StatefulTaskPlanner executes multi-step goals with stateful context,
 // pagination handling, and re-planning on unexpected page states.
 type StatefulTaskPlanner struct {
-	llm           domain.LLMClient
-	registry      map[string]domain.Executor
-	checkpointDir string
+	llm             domain.LLMClient
+	registry        map[string]domain.Executor
+	checkpointDir   string
+	maxStepsPerTask int
+	maxLLMCalls     int
 }
 
 // NewStatefulTaskPlanner constructs a StatefulTaskPlanner.
 // registry maps action names to their executor implementations.
 // llm is used for planning and re-planning.
-func NewStatefulTaskPlanner(llm domain.LLMClient, registry map[string]domain.Executor, checkpointDir string) *StatefulTaskPlanner {
+// maxSteps limits steps per plan (0 = unlimited), maxLLMCalls limits total LLM calls per task (0 = unlimited).
+func NewStatefulTaskPlanner(llm domain.LLMClient, registry map[string]domain.Executor, checkpointDir string, maxSteps, maxLLMCalls int) *StatefulTaskPlanner {
 	return &StatefulTaskPlanner{
-		llm:           llm,
-		registry:      registry,
-		checkpointDir: checkpointDir,
+		llm:             llm,
+		registry:        registry,
+		checkpointDir:   checkpointDir,
+		maxStepsPerTask: maxSteps,
+		maxLLMCalls:     maxLLMCalls,
 	}
 }
 
@@ -70,11 +75,24 @@ func (p *StatefulTaskPlanner) PlanAndExecute(
 		Message: "Planning task…",
 	})
 
+	llmCallCount := 0
+
 	plan, err := p.planTask(ctx, goal, "")
+	llmCallCount++
 	if err != nil {
 		taskCtx.Status = "failed"
 		emitError(events, 0, 0, fmt.Sprintf("planning failed: %v", err))
 		return taskCtx, fmt.Errorf("task planner: initial plan: %w", err)
+	}
+
+	// Enforce max steps per task — truncate with warning if exceeded.
+	if p.maxStepsPerTask > 0 && len(plan.Steps) > p.maxStepsPerTask {
+		slog.Warn("plan truncated to max steps",
+			"task_id", taskCtx.ID,
+			"original", len(plan.Steps),
+			"max", p.maxStepsPerTask,
+		)
+		plan.Steps = plan.Steps[:p.maxStepsPerTask]
 	}
 
 	taskCtx.TotalSteps = len(plan.Steps)
@@ -147,8 +165,16 @@ func (p *StatefulTaskPlanner) PlanAndExecute(
 				Message:    fmt.Sprintf("Unexpected state, re-planning… (%s)", errMsg),
 			})
 
+			// Enforce LLM call limit before re-planning.
+			if p.maxLLMCalls > 0 && llmCallCount >= p.maxLLMCalls {
+				taskCtx.Status = "failed"
+				emitError(events, taskCtx.CurrentStep, len(plan.Steps), "LLM call limit exceeded")
+				return taskCtx, fmt.Errorf("task planner: LLM call limit exceeded (%d)", p.maxLLMCalls)
+			}
+
 			pageCtx := BuildPageContext(result.PageState, "", "")
 			revisedPlan, replanErr := p.replanTask(ctx, goal, stepIndex, len(plan.Steps), pageCtx, errMsg)
+			llmCallCount++
 			if replanErr != nil {
 				taskCtx.Status = "failed"
 				emitError(events, taskCtx.CurrentStep, len(plan.Steps), fmt.Sprintf("re-plan failed: %v", replanErr))

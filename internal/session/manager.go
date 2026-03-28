@@ -44,6 +44,10 @@ type Config struct {
 	// MaxConcurrent is the maximum number of active sessions allowed at once.
 	// Defaults to 5 when zero.
 	MaxConcurrent int
+
+	// MaxPerAccount is the maximum number of active sessions per billing account.
+	// 0 = unlimited. Only enforced when billing context is present.
+	MaxPerAccount int
 }
 
 // DefaultSessionManager manages browser sessions in memory.
@@ -56,6 +60,7 @@ type DefaultSessionManager struct {
 	policyEngine  domain.PolicyEngine
 	billing       *billing.AccountService
 	maxConcurrent int
+	maxPerAccount int
 
 	mu       sync.RWMutex
 	sessions map[string]*domain.Session
@@ -86,6 +91,7 @@ func NewDefaultSessionManager(cfg Config) *DefaultSessionManager {
 		policyEngine:  cfg.PolicyEngine,
 		billing:       cfg.Billing,
 		maxConcurrent: max,
+		maxPerAccount: cfg.MaxPerAccount,
 		sessions:      make(map[string]*domain.Session),
 		browsers:      make(map[string]domain.BrowserInstance),
 	}
@@ -101,6 +107,23 @@ func (m *DefaultSessionManager) Create(ctx context.Context, goal string, meta ma
 		return nil, domain.ErrConcurrentLimitExceeded
 	}
 
+	// Per-account limit (only enforced when billing context is present).
+	accountID := ""
+	if acct := billing.AccountFromContext(ctx); acct != nil {
+		accountID = acct.ID
+	}
+	if m.maxPerAccount > 0 && accountID != "" {
+		count := 0
+		for _, s := range m.sessions {
+			if s.AccountID == accountID && s.Status == "active" {
+				count++
+			}
+		}
+		if count >= m.maxPerAccount {
+			return nil, domain.ErrAccountSessionLimit
+		}
+	}
+
 	inst, err := m.pool.Acquire(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("acquire browser: %w", err)
@@ -111,12 +134,7 @@ func (m *DefaultSessionManager) Create(ctx context.Context, goal string, meta ma
 	for k, v := range meta {
 		md[k] = v
 	}
-	// Extract account ID from billing context (empty in dev mode).
-	accountID := ""
-	if acct := billing.AccountFromContext(ctx); acct != nil {
-		accountID = acct.ID
-	}
-
+	// Re-use accountID computed above (empty in dev mode).
 	s := &domain.Session{
 		ID:        uuid.New().String(),
 		AccountID: accountID,

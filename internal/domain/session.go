@@ -14,6 +14,9 @@ var ErrSessionNotFound = errors.New("session not found")
 // ErrConcurrentLimitExceeded is returned when the concurrent session limit is reached.
 var ErrConcurrentLimitExceeded = errors.New("concurrent session limit exceeded")
 
+// ErrAccountSessionLimit is returned when a single account exceeds its per-account session limit.
+var ErrAccountSessionLimit = errors.New("account session limit exceeded")
+
 // Session tracks browser automation state for a single goal.
 type Session struct {
 	// ID is the UUID v4 identifier for this session.
@@ -62,6 +65,9 @@ type Session struct {
 
 	// ImportedDomains lists the domains covered by the imported cookies.
 	ImportedDomains []string
+
+	// LLMCallCount tracks the total number of LLM API calls made during this session.
+	LLMCallCount int
 }
 
 // SessionManager manages the lifecycle of browser sessions.

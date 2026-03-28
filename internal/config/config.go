@@ -47,11 +47,15 @@ type LogConfig struct {
 
 // APIConfig holds API authentication and rate limiting settings.
 type APIConfig struct {
-	KeyPrefix         string   `mapstructure:"key_prefix"`
-	Keys              []string `mapstructure:"keys"`
-	RequireAuth       bool     `mapstructure:"require_auth"`
-	RateLimitRPM      int      `mapstructure:"rate_limit_rpm"`
-	CORSOrigins       []string `mapstructure:"cors_origins"`
+	KeyPrefix             string   `mapstructure:"key_prefix"`
+	Keys                  []string `mapstructure:"keys"`
+	RequireAuth           bool     `mapstructure:"require_auth"`
+	RateLimitRPM          int      `mapstructure:"rate_limit_rpm"`
+	CORSOrigins           []string `mapstructure:"cors_origins"`
+	CORSRejectUnknown     bool     `mapstructure:"cors_reject_unknown"`
+	MaxBodyBytes          int64    `mapstructure:"max_body_bytes"`
+	MaxSessionsPerAccount int      `mapstructure:"max_sessions_per_account"`
+	RequestTimeoutSeconds int      `mapstructure:"request_timeout_seconds"`
 }
 
 // LLMConfig holds LLM provider settings for the planner.
@@ -67,6 +71,14 @@ type LLMConfig struct {
 
 	// BaseURL overrides the default API endpoint.
 	BaseURL string `mapstructure:"base_url"`
+
+	// MaxStepsPerTask limits the number of steps in a single task plan.
+	// Plans exceeding this limit are truncated. Default 20.
+	MaxStepsPerTask int `mapstructure:"max_steps_per_task"`
+
+	// MaxCallsPerSession limits total LLM API calls per task session.
+	// Default 50.
+	MaxCallsPerSession int `mapstructure:"max_calls_per_session"`
 }
 
 // BridgeConfig holds OpenClaw bridge integration settings.
@@ -125,6 +137,10 @@ type Config struct {
 	// CheckpointDir is the directory where stateful task planner checkpoints are saved.
 	// Defaults to "checkpoints" when empty.
 	CheckpointDir string `mapstructure:"checkpoint_dir"`
+
+	// CheckpointTTLHours is the maximum age (in hours) of checkpoint files before
+	// they are cleaned up by the background cleaner. Default 24.
+	CheckpointTTLHours int `mapstructure:"checkpoint_ttl_hours"`
 }
 
 // Load reads configuration from aperture.yaml and APERTURE_* environment variables.
@@ -195,6 +211,13 @@ func bindEnvs(v *viper.Viper) {
 		"redis.url":                      "APERTURE_REDIS_URL",
 		"bridge.max_concurrent_tasks":    "APERTURE_BRIDGE_MAX_CONCURRENT_TASKS",
 		"bridge.task_timeout_seconds":    "APERTURE_BRIDGE_TASK_TIMEOUT_SECONDS",
+		"api.cors_reject_unknown":        "APERTURE_API_CORS_REJECT_UNKNOWN",
+		"api.max_body_bytes":             "APERTURE_API_MAX_BODY_BYTES",
+		"api.max_sessions_per_account":   "APERTURE_API_MAX_SESSIONS_PER_ACCOUNT",
+		"api.request_timeout_seconds":    "APERTURE_API_REQUEST_TIMEOUT_SECONDS",
+		"llm.max_steps_per_task":         "APERTURE_LLM_MAX_STEPS_PER_TASK",
+		"llm.max_calls_per_session":      "APERTURE_LLM_MAX_CALLS_PER_SESSION",
+		"checkpoint_ttl_hours":           "APERTURE_CHECKPOINT_TTL_HOURS",
 	}
 	for key, env := range envMap {
 		_ = v.BindEnv(key, env)
@@ -215,6 +238,14 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("llm.model", "gpt-4o")
 	v.SetDefault("bridge.max_concurrent_tasks", 10)
 	v.SetDefault("bridge.task_timeout_seconds", 120)
+	v.SetDefault("api.rate_limit_rpm", 120)
+	v.SetDefault("api.cors_reject_unknown", false)
+	v.SetDefault("api.max_body_bytes", 1048576)
+	v.SetDefault("api.max_sessions_per_account", 10)
+	v.SetDefault("api.request_timeout_seconds", 60)
+	v.SetDefault("llm.max_steps_per_task", 20)
+	v.SetDefault("llm.max_calls_per_session", 50)
+	v.SetDefault("checkpoint_ttl_hours", 24)
 	v.SetDefault("stealth.enabled", true)
 	v.SetDefault("stealth.hide_webdriver", true)
 	v.SetDefault("stealth.canvas_noise", false)   // Disabled by default — SwiftShader replaces it

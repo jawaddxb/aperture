@@ -17,8 +17,8 @@ import (
 	"github.com/ApertureHQ/aperture/internal/billing"
 	"github.com/ApertureHQ/aperture/internal/bridge"
 	browserpool "github.com/ApertureHQ/aperture/internal/browser"
+	"github.com/ApertureHQ/aperture/internal/checkpoint"
 	"github.com/ApertureHQ/aperture/internal/config"
-	"github.com/ApertureHQ/aperture/internal/stealth"
 	"github.com/ApertureHQ/aperture/internal/credentials"
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/ApertureHQ/aperture/internal/executor"
@@ -31,6 +31,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/resolver"
 	"github.com/ApertureHQ/aperture/internal/sequencer"
 	"github.com/ApertureHQ/aperture/internal/session"
+	"github.com/ApertureHQ/aperture/internal/stealth"
 	"github.com/ApertureHQ/aperture/internal/stream"
 	"github.com/ApertureHQ/aperture/internal/vision"
 )
@@ -154,6 +155,7 @@ func main() {
 		AuthPersistence: authPersist,
 		PolicyEngine:    policyEngine,
 		Billing:         accountService,
+		MaxPerAccount:   cfg.API.MaxSessionsPerAccount,
 	})
 
 	screenshotSrv := browserpool.NewScreenshotService(pool)
@@ -170,11 +172,22 @@ func main() {
 	}
 	var taskPlannerSvc domain.TaskPlanner
 	if llmClient != nil {
-		taskPlannerSvc = planner.NewStatefulTaskPlanner(llmClient, reg, checkpointDir)
+		taskPlannerSvc = planner.NewStatefulTaskPlanner(
+			llmClient, reg, checkpointDir,
+			cfg.LLM.MaxStepsPerTask, cfg.LLM.MaxCallsPerSession,
+		)
 		slog.Info("stateful task planner enabled", "checkpoint_dir", checkpointDir)
 	} else {
 		slog.Warn("stateful task planner disabled: no LLM client configured")
 	}
+
+	// Checkpoint TTL cleaner: remove expired checkpoint files hourly.
+	ttlHours := cfg.CheckpointTTLHours
+	if ttlHours <= 0 {
+		ttlHours = 24
+	}
+	checkpoint.StartCleaner(checkpointDir, time.Duration(ttlHours)*time.Hour, 1*time.Hour)
+	slog.Info("checkpoint cleaner started", "ttl_hours", ttlHours, "dir", checkpointDir)
 
 	router := api.NewRouter(api.RouterConfig{
 		SessionManager:    sessionMgr,
@@ -192,9 +205,12 @@ func main() {
 		TaskPlanner:       taskPlannerSvc,
 		TaskCheckpointDir: checkpointDir,
 		AccountService:    accountService,
-		Auth:              buildAuthConfig(cfg),
-		RateLimit:         api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},
-		CORSOrigins:       cfg.API.CORSOrigins,
+		Auth:                  buildAuthConfig(cfg),
+		RateLimit:             api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},
+		CORSOrigins:           cfg.API.CORSOrigins,
+		CORSRejectUnknown:     cfg.API.CORSRejectUnknown,
+		MaxBodyBytes:          cfg.API.MaxBodyBytes,
+		RequestTimeoutSeconds: cfg.API.RequestTimeoutSeconds,
 	})
 
 	// Railway sets PORT env var. Use it if present, else use config.

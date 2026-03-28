@@ -13,19 +13,27 @@ browser:
 llm:
   provider: "openai"
   model: "openai/gpt-4o-mini"         # Use provider/model format for OpenRouter
-  api_key: ""                           # Your OpenRouter or OpenAI key
+  # api_key: ""                        # Set via APERTURE_LLM_API_KEY env var
   base_url: "https://openrouter.ai/api" # Remove for direct OpenAI
+  max_steps_per_task: 20               # Max steps per task plan (truncated if exceeded)
+  max_calls_per_session: 50            # Max LLM API calls per task session
 
 api:
   key_prefix: "apt_"
   require_auth: false                   # Set true for production
-  keys: []                              # Add your API keys: ["apt_xxx", "apt_yyy"]
-  rate_limit_rpm: 0                     # Requests per minute per IP (0 = unlimited)
+  # keys: []                            # Set via APERTURE_API_KEYS env var (comma-separated)
+  rate_limit_rpm: 120                   # Requests per minute per IP (0 = unlimited)
   cors_origins: []                      # Allowed origins (empty = allow all)
+  cors_reject_unknown: false            # Reject unknown Origin headers (enable in prod)
+  max_body_bytes: 1048576               # 1MB request body limit
+  max_sessions_per_account: 10          # Max concurrent sessions per billing account
+  request_timeout_seconds: 60           # Global request timeout (excludes SSE endpoints)
 
 bridge:
   max_concurrent_tasks: 10
   task_timeout_seconds: 120
+
+checkpoint_ttl_hours: 24                # Max age of checkpoint files before cleanup
 
 stealth:
   enabled: true

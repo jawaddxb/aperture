@@ -113,7 +113,7 @@ func TestStatefulTaskPlanner_PlanAndExecute_Success(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	tp := planner.NewStatefulTaskPlanner(llm, registry, dir)
+	tp := planner.NewStatefulTaskPlanner(llm, registry, dir, 0, 0)
 	inst := &taskMockBrowser{}
 
 	events := make(chan domain.TaskEvent, 64)
@@ -148,7 +148,7 @@ func TestStatefulTaskPlanner_PlanAndExecute_LLMError(t *testing.T) {
 	llm := &taskMockLLM{err: fmt.Errorf("llm unavailable")}
 	registry := map[string]domain.Executor{}
 	dir := t.TempDir()
-	tp := planner.NewStatefulTaskPlanner(llm, registry, dir)
+	tp := planner.NewStatefulTaskPlanner(llm, registry, dir, 0, 0)
 	inst := &taskMockBrowser{}
 
 	events := make(chan domain.TaskEvent, 64)
@@ -183,7 +183,7 @@ func TestStatefulTaskPlanner_PlanAndExecute_UnknownAction(t *testing.T) {
 	_ = replanCount
 
 	dir := t.TempDir()
-	tp := planner.NewStatefulTaskPlanner(llm, registry, dir)
+	tp := planner.NewStatefulTaskPlanner(llm, registry, dir, 0, 0)
 	inst := &taskMockBrowser{}
 
 	events := make(chan domain.TaskEvent, 256)
@@ -219,7 +219,7 @@ func TestStatefulTaskPlanner_Checkpoint_Written(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	tp := planner.NewStatefulTaskPlanner(llm, registry, dir)
+	tp := planner.NewStatefulTaskPlanner(llm, registry, dir, 0, 0)
 	inst := &taskMockBrowser{}
 
 	events := make(chan domain.TaskEvent, 64)

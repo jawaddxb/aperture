@@ -76,6 +76,17 @@ type RouterConfig struct {
 
 	// CORSOrigins is a list of allowed CORS origins. Empty = allow all.
 	CORSOrigins []string
+
+	// CORSRejectUnknown, when true with empty CORSOrigins, rejects requests
+	// that include an Origin header (production API-only mode).
+	CORSRejectUnknown bool
+
+	// MaxBodyBytes is the maximum request body size in bytes. 0 = unlimited.
+	MaxBodyBytes int64
+
+	// RequestTimeoutSeconds is the global request timeout for non-streaming routes.
+	// 0 = no timeout.
+	RequestTimeoutSeconds int
 }
 
 // NewRouter constructs and returns the root chi router with all routes registered.
@@ -91,8 +102,11 @@ func NewRouter(cfgs ...RouterConfig) http.Handler {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(CORSMiddleware(cfg.CORSOrigins))
+	r.Use(SecurityHeaders())
+	r.Use(CORSMiddleware(cfg.CORSOrigins, cfg.CORSRejectUnknown))
+	r.Use(BodySizeLimit(cfg.MaxBodyBytes))
 	r.Use(RateLimit(cfg.RateLimit))
+	r.Use(RequestTimeout(cfg.RequestTimeoutSeconds))
 
 	// Health and website are always public.
 	r.Get("/health", HealthHandler)
