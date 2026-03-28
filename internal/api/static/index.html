@@ -168,8 +168,7 @@ tailwind.config = {
 }
 .split-letter {
   display: inline-block;
-  opacity: 0;
-  animation: blurReveal 0.4s ease forwards;
+  opacity: 1;
 }
 
 /* ══════ ANIMATION 2: Continuous Marquee ══════ */
@@ -297,9 +296,9 @@ tailwind.config = {
 
       <!-- Hero Content -->
       <div class="flex-1 flex flex-col items-center justify-center text-center px-6">
-        <p class="font-akshar text-xs sm:text-sm md:text-base tracking-[0.15em] text-muted-foreground uppercase mb-4 sm:mb-6">Browser Engine for AI Agents</p>
+        <p class="font-akshar text-sm sm:text-base md:text-lg tracking-[0.15em] text-muted-foreground uppercase mb-3 sm:mb-4">Browser Engine for AI Agents</p>
 
-        <h1 id="hero-heading" class="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-normal leading-[1.08] max-w-5xl pb-2 heading-gradient heading-shimmer px-2" style="letter-spacing: -0.06em;">
+        <h1 id="hero-heading" class="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-normal leading-[1.08] max-w-5xl pb-2 heading-gradient heading-shimmer px-2" style="letter-spacing: -0.06em; font-size: clamp(2.5rem, 6vw, 6rem);">
           One API call.<br class="sm:hidden"/> Any website.<br class="hidden md:block"/> Structured data back.
         </h1>
 
