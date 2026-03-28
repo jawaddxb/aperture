@@ -176,11 +176,29 @@ func navigate(
 
 	actions := buildNavigateActions(rawURL, wait, selector, &finalURL, &title)
 
-	if err := chromedp.Run(runCtx, actions...); err != nil {
-		if ctx.Err() != nil {
-			return nil, fmt.Errorf("timeout waiting for page: %w", ctx.Err())
+	// Execute navigation with hard timeout enforcement.
+	// chromedp.Run may not always respect context cancellation for certain
+	// page load states (e.g., infinite JS loading, CAPTCHA walls).
+	// Use a goroutine + select to enforce the deadline.
+	type navResult struct {
+		err error
+	}
+	navCh := make(chan navResult, 1)
+	go func() {
+		navCh <- navResult{err: chromedp.Run(runCtx, actions...)}
+	}()
+
+	select {
+	case nr := <-navCh:
+		if nr.err != nil {
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("timeout waiting for page: %w", ctx.Err())
+			}
+			return nil, nr.err
 		}
-		return nil, err
+	case <-ctx.Done():
+		cancelRun() // Force cancel the chromedp context
+		return nil, fmt.Errorf("page load error net::ERR_TIMED_OUT (hard timeout)")
 	}
 
 	return &domain.PageState{

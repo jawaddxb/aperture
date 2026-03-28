@@ -3,9 +3,11 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/go-chi/chi/v5"
@@ -119,7 +121,12 @@ func (h *SessionHandlers) GetByID(w http.ResponseWriter, r *http.Request) {
 // Execute handles POST /api/v1/sessions/:id/execute.
 func (h *SessionHandlers) Execute(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	result, err := h.manager.Execute(r.Context(), id)
+	// Hard timeout: 60s for the entire execution (plan + all steps).
+	// Individual steps have their own 30s timeout, but chromedp may not
+	// always respect context cancellation for certain page load states.
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+	result, err := h.manager.Execute(ctx, id)
 	if err != nil {
 		if errors.Is(err, domain.ErrSessionNotFound) {
 			writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")

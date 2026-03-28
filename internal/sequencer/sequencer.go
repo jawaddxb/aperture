@@ -86,7 +86,39 @@ func (s *DefaultSequencer) runStep(
 		}
 	}
 
-	ar, execErr := s.executeStep(ctx, inst, step)
+	// Hard timeout per step: 30s. chromedp may not always respect context
+	// cancellation for certain page load states (e.g., infinite JS loading,
+	// CAPTCHA walls that load body but never settle). This goroutine wrapper
+	// guarantees we return within the timeout.
+	stepTimeout := 30 * time.Second
+	type execResult struct {
+		ar      *domain.ActionResult
+		execErr error
+	}
+	ch := make(chan execResult, 1)
+	stepCtx, stepCancel := context.WithTimeout(ctx, stepTimeout)
+	go func() {
+		ar, err := s.executeStep(stepCtx, inst, step)
+		ch <- execResult{ar: ar, execErr: err}
+	}()
+
+	var ar *domain.ActionResult
+	var execErr error
+	select {
+	case res := <-ch:
+		ar = res.ar
+		execErr = res.execErr
+	case <-stepCtx.Done():
+		ar = &domain.ActionResult{
+			Action:   step.Action,
+			Success:  false,
+			Error:    fmt.Sprintf("step timed out after %v", stepTimeout),
+			Duration: time.Since(start),
+		}
+		execErr = nil
+	}
+	stepCancel()
+
 	if execErr == nil && ar.Success {
 		return domain.StepResult{Step: step, Result: ar, Index: idx, Duration: time.Since(start)}, false
 	}
