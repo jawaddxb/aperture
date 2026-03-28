@@ -121,6 +121,10 @@ type Config struct {
 	LLM     LLMConfig     `mapstructure:"llm"`
 	Bridge  BridgeConfig  `mapstructure:"bridge"`
 	Stealth StealthYAML   `mapstructure:"stealth"`
+
+	// CheckpointDir is the directory where stateful task planner checkpoints are saved.
+	// Defaults to "checkpoints" when empty.
+	CheckpointDir string `mapstructure:"checkpoint_dir"`
 }
 
 // Load reads configuration from aperture.yaml and APERTURE_* environment variables.

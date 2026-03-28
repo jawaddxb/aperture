@@ -163,6 +163,19 @@ func main() {
 		MaxConcurrent:  cfg.Bridge.MaxConcurrentTasks,
 	})
 
+	// Stateful task planner: parallel execution path with SSE streaming.
+	checkpointDir := cfg.CheckpointDir
+	if checkpointDir == "" {
+		checkpointDir = "checkpoints"
+	}
+	var taskPlannerSvc domain.TaskPlanner
+	if llmClient != nil {
+		taskPlannerSvc = planner.NewStatefulTaskPlanner(llmClient, reg, checkpointDir)
+		slog.Info("stateful task planner enabled", "checkpoint_dir", checkpointDir)
+	} else {
+		slog.Warn("stateful task planner disabled: no LLM client configured")
+	}
+
 	router := api.NewRouter(api.RouterConfig{
 		SessionManager:    sessionMgr,
 		ScreenshotService: screenshotSrv,
@@ -176,6 +189,8 @@ func main() {
 		ProfileManager:    profileMgr,
 		CredentialVault:   vault,
 		AgentStateStore:   agentStateStore,
+		TaskPlanner:       taskPlannerSvc,
+		TaskCheckpointDir: checkpointDir,
 		AccountService:    accountService,
 		Auth:              buildAuthConfig(cfg),
 		RateLimit:         api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},

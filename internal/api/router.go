@@ -58,6 +58,13 @@ type RouterConfig struct {
 	// AgentStateStore, when set, enables agent memory KV endpoints.
 	AgentStateStore domain.AgentStateStore
 
+	// TaskPlanner, when set, enables POST /api/v1/tasks/execute and /api/v1/tasks/resume.
+	TaskPlanner domain.TaskPlanner
+
+	// TaskCheckpointDir is the directory used for task checkpoint files.
+	// Required when TaskPlanner is set.
+	TaskCheckpointDir string
+
 	// AccountService, when set, enables billing-aware auth and admin endpoints.
 	AccountService *billing.AccountService
 
@@ -172,6 +179,12 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 			r.Put("/agents/{agent_id}/memory/{key}", mh.SetKey)
 			r.Get("/agents/{agent_id}/memory/{key}", mh.GetKey)
 			r.Delete("/agents/{agent_id}/memory/{key}", mh.DeleteKey)
+		}
+
+		if cfg.TaskPlanner != nil {
+			th := NewTaskHandlers(cfg.TaskPlanner, cfg.BrowserPool, cfg.TaskCheckpointDir)
+			r.Post("/tasks/execute", th.Execute)
+			r.Post("/tasks/resume", th.Resume)
 		}
 
 		RegisterBridgeRoutes(r, BridgeConfig{
