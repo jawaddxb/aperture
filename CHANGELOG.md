@@ -2,6 +2,45 @@
 
 All notable changes to Aperture are documented here.
 
+## [2.0.0] — 2026-03-28
+
+### Added
+- **xBPP Policy Engine** — Cross-platform Behavior Policy Protocol with 7-check rule evaluator
+  - Domain blocklist/allowlist with glob matching (`*.example.com`)
+  - Action type allowlisting
+  - Max actions per session enforcement
+  - Sliding-window rate limiting (RPM)
+  - Custom rule DSL (`domain == X AND action == Y`)
+  - Financial transaction threshold escalation
+  - CRUD API: `GET/PUT/DELETE /api/v1/policies/{agent_id}`
+  - Sub-10ms evaluation latency, wired into session execution
+- **Site Profiles** — YAML-defined domain intelligence for structured extraction
+  - 3 built-in profiles: Amazon (product + search), Google (search), Shopify (product)
+  - Auto-matching on navigate: URL pattern → profile → structured data + available actions
+  - Embedded via Go `embed.FS` — zero filesystem access at runtime
+  - Profile listing API: `GET /api/v1/profiles`
+  - `PageState` enriched with `profile_matched`, `structured_data`, `available_actions`
+- **Credential Vault** — AES-256-GCM encrypted per-agent credential storage
+  - File-based storage at `~/.aperture/credentials/`
+  - Key derivation: HKDF-SHA256 from `APERTURE_VAULT_KEY` env var or generated `vault.key`
+  - Wildcard domain matching for credentials (`*.amazon.com`)
+  - Auto-login: detects login forms, fills username/password, submits
+  - CRUD API: `GET/PUT/DELETE /api/v1/agents/{agent_id}/credentials[/{domain}]`
+  - Passwords never logged or returned in API responses
+- **TypeScript SDK** (`@aperture/sdk` v0.1.0) — Fluent developer surface
+  - `Aperture` → `ApertureSession` fluent API
+  - Actions: `navigate`, `click`, `type`, `select`, `scroll`, `wait`, `extract`, `screenshot`, `close`
+  - Zod schema validation on `extract()` for type-safe structured data
+  - Typed error hierarchy: `PolicyBlockedError`, `DisambiguationError`, `BudgetExhaustedError`, `SessionExpiredError`
+  - Zero external HTTP dependencies (native `fetch`)
+  - 6 Jest tests with mocked fetch
+
+### Changed
+- `.gitignore` now uses `/aperture-server` to avoid ignoring `cmd/aperture-server/` directory
+- `NavigateExecutor` uses functional options pattern for optional dependencies
+- `session.Config` extended with `PolicyEngine` field
+- `RouterConfig` extended with `PolicyEngine`, `ProfileManager`, `CredentialVault` fields
+
 ## [1.1.0] — 2026-03-27
 
 ### Added
