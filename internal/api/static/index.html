@@ -161,15 +161,7 @@ tailwind.config = {
 .mobile-menu { display: none; }
 .mobile-menu.open { display: flex; }
 
-/* ══════ ANIMATION 1: Split Text Hero (BlurText) ══════ */
-@keyframes blurReveal {
-  from { opacity: 0; filter: blur(8px); transform: translateY(4px); }
-  to { opacity: 1; filter: blur(0); transform: translateY(0); }
-}
-.split-letter {
-  display: inline-block;
-  opacity: 1;
-}
+/* Split text animation removed — caused layout/sizing issues */
 
 /* ══════ ANIMATION 2: Continuous Marquee ══════ */
 .marquee-wrapper {
@@ -772,30 +764,7 @@ document.querySelectorAll('#mobile-menu a').forEach(function(link) {
   });
 });
 
-// ══════ ANIMATION 1: Split Text Hero ══════
-(function() {
-  var h1 = document.getElementById('hero-heading');
-  if (!h1) return;
-  // Get text lines - preserve the br
-  var text = 'One API call. Any website.';
-  var text2 = 'Structured data back.';
-  var html = '';
-  var idx = 0;
-  function wrapLetters(str) {
-    var result = '';
-    for (var i = 0; i < str.length; i++) {
-      if (str[i] === ' ') {
-        result += '<span class="split-letter" style="animation-delay:' + (idx * 20) + 'ms">&nbsp;</span>';
-      } else {
-        result += '<span class="split-letter" style="animation-delay:' + (idx * 20) + 'ms">' + str[i] + '</span>';
-      }
-      idx++;
-    }
-    return result;
-  }
-  html = wrapLetters(text) + '<br class="hidden md:block"/>' + wrapLetters(text2);
-  h1.innerHTML = html;
-})();
+// Split text animation removed — caused heading size issues
 
 // ══════ ANIMATION 3: Counter Animation for Stats ══════
 (function() {
