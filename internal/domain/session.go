@@ -48,6 +48,16 @@ type Session struct {
 
 	// Metadata holds arbitrary key-value annotations.
 	Metadata map[string]string
+
+	// TrustMode controls fingerprint randomisation for this session.
+	// "standard" applies normal stealth; "preserve" locks the imported profile's fingerprint.
+	TrustMode TrustMode
+
+	// ImportedProfile is the profile ID created during cookie import, e.g. "imported-linkedin-1234".
+	ImportedProfile string
+
+	// ImportedDomains lists the domains covered by the imported cookies.
+	ImportedDomains []string
 }
 
 // SessionManager manages the lifecycle of browser sessions.

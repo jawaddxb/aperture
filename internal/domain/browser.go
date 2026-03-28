@@ -153,6 +153,10 @@ type StealthConfig struct {
 	UTLSEnabled     bool
 	UTLSFingerprint string
 	UTLSProxyAddr   string // Set at runtime after proxy starts; empty means no uTLS proxy.
+
+	// TrustMode controls fingerprint randomisation behaviour.
+	// When set to TrustPreserve, viewport/timezone/geo randomisation is skipped.
+	TrustMode TrustMode
 }
 
 // Profile represents an isolated browser user data directory.

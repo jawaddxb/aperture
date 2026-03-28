@@ -62,12 +62,16 @@ func ApplyStealth(ctx context.Context, cfg domain.StealthConfig) error {
 	// - SwiftShader: no JS spoofing needed — hardware-level crowd-blending.
 	// - Noise: inject canvas noise (legacy, ML-detectable).
 	// - Native/other: spoof WebGL vendor/renderer to look like common Intel GPU.
+	// TrustPreserve: canvas noise is skipped to avoid breaking imported session consistency.
 	switch cfg.WebGL {
 	case "swiftshader":
 		// No canvas noise, no WebGL spoof. SwiftShader handles everything at GPU level.
 	case "noise":
 		js += webglSpoofJS
-		js += canvasNoiseJS
+		// Skip canvas noise for imported sessions — consistency is the defense.
+		if cfg.TrustMode != domain.TrustPreserve {
+			js += canvasNoiseJS
+		}
 	default:
 		// native or unset: still spoof vendor/renderer for basic protection
 		js += webglSpoofJS
@@ -89,17 +93,22 @@ func ApplyStealth(ctx context.Context, cfg domain.StealthConfig) error {
 		actions = append(actions, emulation.SetUserAgentOverride(cfg.UserAgent))
 	}
 
-	if cfg.RandomView {
-		w, h := randomViewport()
-		actions = append(actions, setViewport(w, h))
-	}
+	// TrustPreserve: skip all randomisation that could break an imported session's
+	// fingerprint consistency. Webdriver hide, WebRTC block, and mock plugins are
+	// still applied as they do not alter the session's observable fingerprint.
+	if cfg.TrustMode != domain.TrustPreserve {
+		if cfg.RandomView {
+			w, h := randomViewport()
+			actions = append(actions, setViewport(w, h))
+		}
 
-	if cfg.Timezone != "" {
-		actions = append(actions, setTimezone(cfg.Timezone))
-	}
+		if cfg.Timezone != "" {
+			actions = append(actions, setTimezone(cfg.Timezone))
+		}
 
-	if cfg.GeoLatitude != 0 || cfg.GeoLongitude != 0 {
-		actions = append(actions, setGeolocation(cfg.GeoLatitude, cfg.GeoLongitude))
+		if cfg.GeoLatitude != 0 || cfg.GeoLongitude != 0 {
+			actions = append(actions, setGeolocation(cfg.GeoLatitude, cfg.GeoLongitude))
+		}
 	}
 
 	return chromedp.Run(ctx, actions...)

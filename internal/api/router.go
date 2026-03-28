@@ -119,6 +119,9 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 		r.Post("/sessions/{id}/execute", sh.Execute)
 		r.Delete("/sessions/{id}", sh.Delete)
 
+		importHandler := NewSessionImportHandlers(cfg.SessionManager, cfg.ProfileManager)
+		r.Post("/sessions/import", importHandler.Import)
+
 		ah := NewActionHandlers(cfg.SessionManager, cfg.ScreenshotService)
 		r.Post("/actions/execute", ah.ExecuteAction)
 		r.Post("/actions/screenshot", ah.Screenshot)
