@@ -5,6 +5,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ const defaultNavigateTimeout = 30 * time.Second
 // It implements domain.Executor.
 type NavigateExecutor struct {
 	profileMgr domain.SiteProfileManager // optional; nil = no profile matching
+	credVault  domain.CredentialVault    // optional; nil = no auto-login
 }
 
 // NewNavigateExecutor constructs a NavigateExecutor.
@@ -52,6 +54,11 @@ type NavigateOption func(*NavigateExecutor)
 // WithProfileManager sets the profile manager for site intelligence.
 func WithProfileManager(pm domain.SiteProfileManager) NavigateOption {
 	return func(e *NavigateExecutor) { e.profileMgr = pm }
+}
+
+// WithCredentialVault sets the credential vault for auto-login.
+func WithCredentialVault(cv domain.CredentialVault) NavigateOption {
+	return func(e *NavigateExecutor) { e.credVault = cv }
 }
 
 // Execute navigates to the URL in params["url"] and waits using params["wait"].
@@ -99,6 +106,18 @@ func (e *NavigateExecutor) Execute(
 	pageState, err := navigate(ctx, inst.Context(), rawURL, wait, selector)
 	if err != nil {
 		return failResult(result, start, fmt.Errorf("navigate: %w", err)), nil
+	}
+
+	// Auto-login: if credential vault has credentials for this domain with auto_login,
+	// attempt to fill login form and submit.
+	if e.credVault != nil && pageState != nil {
+		agentID, _ := params["agent_id"].(string)
+		if agentID == "" {
+			agentID, _ = params["session_id"].(string)
+		}
+		if agentID != "" {
+			e.tryAutoLogin(ctx, inst, agentID, pageState)
+		}
 	}
 
 	// Site profile matching: enrich response with structured data if a profile matches.
@@ -230,3 +249,100 @@ func failResult(result *domain.ActionResult, start time.Time, err error) *domain
 	result.Duration = time.Since(start)
 	return result
 }
+
+// tryAutoLogin checks if credentials exist for the navigated domain and
+// attempts to fill and submit a login form. Best-effort: errors are logged
+// but never propagated to the caller.
+func (e *NavigateExecutor) tryAutoLogin(ctx context.Context, inst domain.BrowserInstance, agentID string, pageState *domain.PageState) {
+	if pageState.URL == "" {
+		return
+	}
+
+	// Extract domain from URL.
+	pageDomain := ""
+	if u, err := url.Parse(pageState.URL); err == nil {
+		pageDomain = u.Hostname()
+	}
+	if pageDomain == "" {
+		return
+	}
+
+	cred, err := e.credVault.Get(ctx, agentID, pageDomain)
+	if err != nil || cred == nil || !cred.AutoLogin {
+		return
+	}
+
+	browserCtx := inst.Context()
+
+	// Check if there's a password field (login form indicator).
+	var hasPassword bool
+	runCtx, cancel := context.WithCancel(browserCtx)
+	_ = chromedp.Run(runCtx,
+		chromedp.Evaluate(`!!document.querySelector('input[type=password]')`, &hasPassword),
+	)
+	cancel()
+
+	if !hasPassword {
+		return
+	}
+
+	// Fill username (try common selectors).
+	usernameSelectors := []string{
+		"input[type=email]",
+		"input[name=email]",
+		"input[name=username]",
+		"input[type=text]",
+	}
+	for _, sel := range usernameSelectors {
+		runCtx2, cancel2 := context.WithCancel(browserCtx)
+		err := chromedp.Run(runCtx2,
+			chromedp.SendKeys(sel, cred.Username, chromedp.ByQuery),
+		)
+		cancel2()
+		if err == nil {
+			break
+		}
+	}
+
+	// Fill password.
+	runCtx3, cancel3 := context.WithCancel(browserCtx)
+	_ = chromedp.Run(runCtx3,
+		chromedp.SendKeys("input[type=password]", cred.Password, chromedp.ByQuery),
+	)
+	cancel3()
+
+	// Submit: try button[type=submit], then Enter key.
+	runCtx4, cancel4 := context.WithCancel(browserCtx)
+	err = chromedp.Run(runCtx4,
+		chromedp.Click("button[type=submit]", chromedp.ByQuery),
+	)
+	cancel4()
+	if err != nil {
+		runCtx5, cancel5 := context.WithCancel(browserCtx)
+		_ = chromedp.Run(runCtx5,
+			chromedp.SendKeys("input[type=password]", "\r", chromedp.ByQuery),
+		)
+		cancel5()
+	}
+
+	// Wait for navigation.
+	runCtx6, cancel6 := context.WithCancel(browserCtx)
+	_ = chromedp.Run(runCtx6, chromedp.Sleep(500*time.Millisecond))
+	cancel6()
+
+	// Update page state after login.
+	runCtx7, cancel7 := context.WithCancel(browserCtx)
+	var newURL, newTitle string
+	_ = chromedp.Run(runCtx7,
+		chromedp.Location(&newURL),
+		chromedp.Title(&newTitle),
+	)
+	cancel7()
+	if newURL != "" {
+		pageState.URL = newURL
+	}
+	if newTitle != "" {
+		pageState.Title = newTitle
+	}
+}
+

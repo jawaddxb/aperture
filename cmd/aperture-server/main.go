@@ -17,6 +17,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/bridge"
 	browserpool "github.com/ApertureHQ/aperture/internal/browser"
 	"github.com/ApertureHQ/aperture/internal/config"
+	"github.com/ApertureHQ/aperture/internal/credentials"
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/ApertureHQ/aperture/internal/executor"
 	"github.com/ApertureHQ/aperture/internal/llm"
@@ -69,10 +70,28 @@ func main() {
 		slog.Info("site profiles loaded", "count", len(pm.Profiles()))
 	}
 
+	// Auth persistence: save/restore cookies across restarts.
+	var authPersist domain.AuthPersistence
+	if ap, err := auth.NewFileAuthPersistence(auth.FileAuthConfig{}); err != nil {
+		slog.Warn("auth persistence unavailable, cookies will not survive restarts", "error", err)
+	} else {
+		authPersist = ap
+		slog.Info("auth persistence enabled")
+	}
+
+	// Credential vault: encrypted per-agent, per-domain credentials.
+	var vault domain.CredentialVault
+	if v, err := credentials.NewEncryptedFileVault(); err != nil {
+		slog.Warn("credential vault unavailable", "error", err)
+	} else {
+		vault = v
+		slog.Info("credential vault enabled")
+	}
+
 	// Bootstrap the full session manager with planner + sequencer.
 	llmClient := buildLLMClient(cfg)
 	hitlMgr := executor.NewDefaultHITLManager()
-	reg := buildRegistry(pool, llmClient, hitlMgr, profileMgr)
+	reg := buildRegistry(pool, llmClient, hitlMgr, profileMgr, vault)
 	seq := sequencer.NewDefaultSequencer(sequencer.Config{Registry: reg})
 	p := buildPlanner(cfg)
 
@@ -82,15 +101,6 @@ func main() {
 	if visionClient, ok := llmClient.(domain.VisionLLMClient); ok {
 		visionAnalyzer = vision.NewLLMVisionAnalyzer(visionClient)
 		slog.Info("vision analyzer enabled")
-	}
-
-	// Auth persistence: save/restore cookies across restarts.
-	var authPersist domain.AuthPersistence
-	if ap, err := auth.NewFileAuthPersistence(auth.FileAuthConfig{}); err != nil {
-		slog.Warn("auth persistence unavailable, cookies will not survive restarts", "error", err)
-	} else {
-		authPersist = ap
-		slog.Info("auth persistence enabled")
 	}
 
 	// Metrics collector for action timing and success rates.
@@ -125,6 +135,7 @@ func main() {
 		MetricsCollector:  metrics,
 		PolicyEngine:      policyEngine,
 		ProfileManager:    profileMgr,
+		CredentialVault:   vault,
 		Auth:              buildAuthConfig(cfg),
 		RateLimit:         api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},
 		CORSOrigins:       cfg.API.CORSOrigins,
@@ -164,12 +175,15 @@ func main() {
 
 // buildRegistry constructs the default executor registry wired to the pool.
 // If llm is non-nil, the extract executor is included for structured data extraction.
-func buildRegistry(pool domain.BrowserPool, llm domain.LLMClient, hitlMgr *executor.DefaultHITLManager, profileMgr domain.SiteProfileManager) map[string]domain.Executor {
+func buildRegistry(pool domain.BrowserPool, llm domain.LLMClient, hitlMgr *executor.DefaultHITLManager, profileMgr domain.SiteProfileManager, credVault domain.CredentialVault) map[string]domain.Executor {
 	res := resolver.NewUnifiedResolver()
 	tabMgr := browserpool.NewPoolTabProxy(pool)
 	var navOpts []executor.NavigateOption
 	if profileMgr != nil {
 		navOpts = append(navOpts, executor.WithProfileManager(profileMgr))
+	}
+	if credVault != nil {
+		navOpts = append(navOpts, executor.WithCredentialVault(credVault))
 	}
 	reg := map[string]domain.Executor{
 		"navigate":   executor.NewNavigateExecutor(navOpts...),

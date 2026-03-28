@@ -51,6 +51,9 @@ type RouterConfig struct {
 	// ProfileManager, when set, enables site profile listing endpoint.
 	ProfileManager domain.SiteProfileManager
 
+	// CredentialVault, when set, enables credential CRUD endpoints.
+	CredentialVault domain.CredentialVault
+
 	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
 	Auth AuthConfig
 
@@ -139,6 +142,13 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 		if cfg.ProfileManager != nil {
 			prh := NewProfileHandlers(cfg.ProfileManager)
 			r.Get("/profiles", prh.List)
+		}
+
+		if cfg.CredentialVault != nil {
+			ch := NewCredentialHandlers(cfg.CredentialVault)
+			r.Get("/agents/{agent_id}/credentials", ch.List)
+			r.Put("/agents/{agent_id}/credentials/{domain}", ch.Store)
+			r.Delete("/agents/{agent_id}/credentials/{domain}", ch.Delete)
 		}
 
 		RegisterBridgeRoutes(r, BridgeConfig{
