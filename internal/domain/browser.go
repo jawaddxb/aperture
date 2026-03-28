@@ -144,6 +144,11 @@ type StealthConfig struct {
 	Timezone     string  // IANA timezone, e.g. "America/New_York"
 	GeoLatitude  float64 // Geolocation latitude override
 	GeoLongitude float64 // Geolocation longitude override
+	// WebGL controls WebGL fingerprint strategy: "swiftshader", "noise", or "native".
+	// "swiftshader" (default): all instances produce identical WebGL output via software GPU.
+	// "noise": random per-session canvas noise (legacy, ML-detectable).
+	// "native": no modification (use real GPU, unique fingerprint).
+	WebGL string
 }
 
 // Profile represents an isolated browser user data directory.

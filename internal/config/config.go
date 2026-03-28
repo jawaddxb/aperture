@@ -91,6 +91,11 @@ type StealthYAML struct {
 	Timezone       string  `mapstructure:"timezone"`
 	GeoLatitude    float64 `mapstructure:"geo_latitude"`
 	GeoLongitude   float64 `mapstructure:"geo_longitude"`
+	// WebGL controls WebGL fingerprint strategy: "swiftshader" (crowd-blend, default),
+	// "noise" (random per-session canvas noise), or "native" (no modification).
+	// SwiftShader produces identical WebGL output across all instances, making
+	// fingerprint-based tracking impossible. This replaces canvas noise injection.
+	WebGL string `mapstructure:"webgl"`
 }
 
 // Config is the root application configuration struct.
@@ -197,7 +202,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("bridge.task_timeout_seconds", 120)
 	v.SetDefault("stealth.enabled", true)
 	v.SetDefault("stealth.hide_webdriver", true)
-	v.SetDefault("stealth.canvas_noise", true)
+	v.SetDefault("stealth.canvas_noise", false)   // Disabled by default — SwiftShader replaces it
+	v.SetDefault("stealth.webgl", "swiftshader") // Crowd-blend: identical WebGL across all instances
 	v.SetDefault("stealth.block_webrtc", true)
 	v.SetDefault("stealth.random_viewport", true)
 	v.SetDefault("stealth.mock_plugins", true)

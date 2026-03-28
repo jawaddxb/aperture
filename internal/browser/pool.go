@@ -174,7 +174,7 @@ func (p *Pool) spawnInstance(profileID string) (*instance, error) {
 		extra = append(extra, chromedp.UserDataDir(profile.Path))
 	}
 
-	opts := BuildAllocatorOptions(p.cfg.ChromiumPath, extra...)
+	opts := BuildAllocatorOptions(p.cfg.ChromiumPath, p.cfg.Stealth, extra...)
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	inst, err := newInstance(allocCtx, allocCancel, id, p.cfg.Stealth, profileID)

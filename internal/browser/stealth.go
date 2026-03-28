@@ -11,7 +11,10 @@ import (
 	"github.com/ApertureHQ/aperture/internal/domain"
 )
 
-// coreStealthJS patches navigator.webdriver, languages, permissions, and WebGL.
+// coreStealthJS patches navigator.webdriver, languages, and permissions.
+// WebGL vendor/renderer is only faked when NOT using SwiftShader, because
+// SwiftShader has its own consistent "Google Inc. (Google)" / "ANGLE (Google,
+// SwiftShader...)" strings that blend into the crowd of all SwiftShader users.
 const coreStealthJS = `
 (function() {
     Object.defineProperty(navigator, 'webdriver', { get: () => false });
@@ -23,7 +26,14 @@ const coreStealthJS = `
             Promise.resolve({ state: Notification.permission }) :
             origQuery(p)
     );
+})();`
 
+// webglSpoofJS fakes WebGL vendor/renderer for non-SwiftShader modes.
+// When SwiftShader is active, this is NOT injected — SwiftShader's native
+// values ("Google Inc." / "ANGLE SwiftShader") are consistent across all
+// instances, which is the entire point of crowd-blending.
+const webglSpoofJS = `
+(function(){
     const gp = WebGLRenderingContext.prototype.getParameter;
     WebGLRenderingContext.prototype.getParameter = function(param) {
         if (param === 37445) return 'Intel Inc.';
@@ -47,9 +57,22 @@ func ApplyStealth(ctx context.Context, cfg domain.StealthConfig) error {
 
 	// Phase 1: Collect all JS to inject as a single script.
 	js := coreStealthJS
-	if cfg.CanvasNoise {
+
+	// WebGL fingerprint strategy:
+	// - SwiftShader: no JS spoofing needed — hardware-level crowd-blending.
+	// - Noise: inject canvas noise (legacy, ML-detectable).
+	// - Native/other: spoof WebGL vendor/renderer to look like common Intel GPU.
+	switch cfg.WebGL {
+	case "swiftshader":
+		// No canvas noise, no WebGL spoof. SwiftShader handles everything at GPU level.
+	case "noise":
+		js += webglSpoofJS
 		js += canvasNoiseJS
+	default:
+		// native or unset: still spoof vendor/renderer for basic protection
+		js += webglSpoofJS
 	}
+
 	if cfg.BlockWebRTC {
 		js += blockWebRTCJS
 	}

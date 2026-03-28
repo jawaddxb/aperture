@@ -16,7 +16,7 @@ func TestApplyStealth(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	opts := BuildAllocatorOptions(chromiumPath(t)) // Use system chrome
+	opts := BuildAllocatorOptions(chromiumPath(t), domain.StealthConfig{WebGL: "swiftshader"}) // Use system chrome
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer allocCancel()
 
@@ -59,7 +59,7 @@ func TestApplyStealth_Disabled(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	opts := BuildAllocatorOptions(chromiumPath(t))
+	opts := BuildAllocatorOptions(chromiumPath(t), domain.StealthConfig{WebGL: "swiftshader"})
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer allocCancel()
 

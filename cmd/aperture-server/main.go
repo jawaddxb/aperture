@@ -280,15 +280,27 @@ func buildAuthConfig(cfg *config.Config) api.AuthConfig {
 // mapStealthConfig converts YAML stealth settings to domain.StealthConfig.
 func mapStealthConfig(cfg *config.Config) domain.StealthConfig {
 	s := cfg.Stealth
+	webgl := s.WebGL
+	if webgl == "" {
+		webgl = "swiftshader"
+	}
+	// When SwiftShader is active, canvas noise is redundant and counterproductive.
+	// SwiftShader produces identical output across all instances (crowd-blend).
+	// Canvas noise adds random per-session deltas that are ML-detectable.
+	canvasNoise := s.CanvasNoise
+	if webgl == "swiftshader" {
+		canvasNoise = false
+	}
 	return domain.StealthConfig{
 		Enabled:       s.Enabled,
 		HideWebDriver: s.HideWebDriver,
-		CanvasNoise:   s.CanvasNoise,
+		CanvasNoise:   canvasNoise,
 		BlockWebRTC:   s.BlockWebRTC,
 		RandomView:    s.RandomViewport,
 		MockPlugins:   s.MockPlugins,
 		Timezone:      s.Timezone,
 		GeoLatitude:   s.GeoLatitude,
 		GeoLongitude:  s.GeoLongitude,
+		WebGL:         webgl,
 	}
 }
