@@ -144,6 +144,27 @@ type Config struct {
 	// CheckpointTTLHours is the maximum age (in hours) of checkpoint files before
 	// they are cleaned up by the background cleaner. Default 24.
 	CheckpointTTLHours int `mapstructure:"checkpoint_ttl_hours"`
+
+	// Captcha holds CAPTCHA solver configuration.
+	Captcha CaptchaConfig `mapstructure:"captcha"`
+}
+
+// CaptchaConfig holds CAPTCHA solver settings.
+type CaptchaConfig struct {
+	// Enabled activates automatic CAPTCHA detection and solving.
+	Enabled bool `mapstructure:"enabled"`
+	// Primary is the primary solver: "capsolver", "2captcha", or "none".
+	Primary string `mapstructure:"primary"`
+	// Fallback is the fallback solver (or "hitl" for human only).
+	Fallback string `mapstructure:"fallback"`
+	// CapSolverAPIKey is the CapSolver API key.
+	CapSolverAPIKey string `mapstructure:"capsolver_api_key"`
+	// TwoCaptchaAPIKey is the 2Captcha API key.
+	TwoCaptchaAPIKey string `mapstructure:"twocaptcha_api_key"`
+	// TimeoutSeconds is the max time to wait for a CAPTCHA solution.
+	TimeoutSeconds int `mapstructure:"timeout_seconds"`
+	// AutoDetect enables CAPTCHA detection after each navigation.
+	AutoDetect bool `mapstructure:"auto_detect"`
 }
 
 // Load reads configuration from aperture.yaml and APERTURE_* environment variables.
@@ -222,6 +243,13 @@ func bindEnvs(v *viper.Viper) {
 		"llm.max_calls_per_session":      "APERTURE_LLM_MAX_CALLS_PER_SESSION",
 		"stealth.utls.mode":              "APERTURE_STEALTH_UTLS_MODE",
 		"checkpoint_ttl_hours":           "APERTURE_CHECKPOINT_TTL_HOURS",
+		"captcha.enabled":               "APERTURE_CAPTCHA_ENABLED",
+		"captcha.primary":               "APERTURE_CAPTCHA_PRIMARY",
+		"captcha.fallback":              "APERTURE_CAPTCHA_FALLBACK",
+		"captcha.capsolver_api_key":     "APERTURE_CAPTCHA_CAPSOLVER_KEY",
+		"captcha.twocaptcha_api_key":    "APERTURE_CAPTCHA_2CAPTCHA_KEY",
+		"captcha.timeout_seconds":       "APERTURE_CAPTCHA_TIMEOUT_SECONDS",
+		"captcha.auto_detect":           "APERTURE_CAPTCHA_AUTO_DETECT",
 	}
 	for key, env := range envMap {
 		_ = v.BindEnv(key, env)
@@ -250,6 +278,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("llm.max_steps_per_task", 20)
 	v.SetDefault("llm.max_calls_per_session", 50)
 	v.SetDefault("checkpoint_ttl_hours", 24)
+	v.SetDefault("captcha.enabled", false)
+	v.SetDefault("captcha.primary", "capsolver")
+	v.SetDefault("captcha.fallback", "hitl")
+	v.SetDefault("captcha.timeout_seconds", 120)
+	v.SetDefault("captcha.auto_detect", true)
 	v.SetDefault("stealth.utls.mode", "relay")
 	v.SetDefault("stealth.enabled", true)
 	v.SetDefault("stealth.hide_webdriver", true)
