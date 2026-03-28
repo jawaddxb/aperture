@@ -366,11 +366,11 @@ tailwind.config = {
           </div>
           <!-- Terminal body -->
           <div class="p-6 md:p-8 font-mono text-sm md:text-base leading-relaxed text-gray-100 overflow-x-auto">
-            <div class="term-line term-line-1"><span class="text-gray-400">$</span> curl -X POST https://api.aperture.dev/v1/execute \</div>
-            <div class="term-line term-line-2 pl-4">-d '{"goal": "Get AirPods Pro price on Amazon"}'</div>
-            <div class="term-line term-line-3 mt-4"><span class="text-green-400">✓</span> <span class="text-green-400">Navigated to amazon.com/dp/B0D1XD1ZV3</span></div>
-            <div class="term-line term-line-4"><span class="text-green-400">✓</span> <span class="text-green-400">Cloudflare bypassed (native Chrome)</span></div>
-            <div class="term-line term-line-5"><span class="text-green-400">✓</span> <span class="text-green-400">Policy check passed (12/12)</span></div>
+            <div class="term-line term-line-1"><span class="text-gray-400">$</span> curl -N -X POST https://api.aperture.dev/v1/tasks/execute \</div>
+            <div class="term-line term-line-2 pl-4">-d '{"goal": "Get AirPods Pro price on Amazon", "mode": "auto"}'</div>
+            <div class="term-line term-line-3 mt-4"><span class="text-blue-400">▸</span> <span class="text-blue-400">Mode: research · TLS: chrome_122 · WebGL: swiftshader</span></div>
+            <div class="term-line term-line-4"><span class="text-green-400">✓</span> <span class="text-green-400">Step 1/3 — Navigated to amazon.com</span></div>
+            <div class="term-line term-line-5"><span class="text-green-400">✓</span> <span class="text-green-400">Step 2/3 — Anti-bot bypassed (JA4 clean)</span></div>
             <div class="term-line term-line-6 term-json mt-4">
 <pre class="text-amber-200">{
   "title": "Apple AirPods Pro (2nd Gen)",
@@ -378,11 +378,10 @@ tailwind.config = {
   "currency": "USD",
   "rating": 4.7,
   "availability": "in_stock",
-  "cost": 5,
-  "credits_remaining": 4995
+  "credits_used": 5
 }</pre>
             </div>
-            <div class="term-line term-line-7 mt-4 text-gray-500">Completed in 3.2s · 5 credits<span class="terminal-cursor"></span></div>
+            <div class="term-line term-line-7 mt-4 text-gray-500">✓ Step 3/3 — Complete · 3.2s · 5 credits<span class="terminal-cursor"></span></div>
           </div>
         </div>
       </div>
@@ -489,12 +488,12 @@ tailwind.config = {
             <span class="inline-block text-xs font-akshar uppercase tracking-[0.1em] text-green-700 bg-green-50 px-2 py-1 rounded">Solves: Agent gets blocked</span>
           </div>
           <h3 class="text-foreground text-xl font-semibold mb-3">Stealth Engine</h3>
-          <p class="text-muted-foreground text-sm leading-relaxed mb-4 flex-1">12-layer anti-detection that passes Cloudflare, PerimeterX, DataDome, and Akamai. TLS fingerprint masking, canvas noise injection, Bézier mouse humanization. Native Chrome for clean sites, automatic Camoufox fallback for hardened ones.</p>
+          <p class="text-muted-foreground text-sm leading-relaxed mb-4 flex-1">uTLS proxy rewrites TLS ClientHello to match real Chrome fingerprints. SwiftShader crowd-blends WebGL across all instances — identical output, no random noise to detect. Bézier mouse humanization. Three auto-detected modes: research, hardened, max.</p>
           <div class="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 mb-4 overflow-x-auto">
-<pre>{"stealth": "pass", "layers": 12, "engine": "chrome",
- "fallback": "camoufox", "detected": false}</pre>
+<pre>{"stealth": "pass", "tls": "chrome_122",
+ "webgl": "swiftshader", "detected": false}</pre>
           </div>
-          <p class="text-xs font-akshar uppercase tracking-[0.1em] text-muted-foreground mt-auto pt-2 border-t border-gray-100">12 Hardening Layers · &lt;10ms Overhead</p>
+          <p class="text-xs font-akshar uppercase tracking-[0.1em] text-muted-foreground mt-auto pt-2 border-t border-gray-100">uTLS + SwiftShader · JA4 Clean · 3 Modes</p>
         </div>
 
         <!-- Card 2: xBPP Governance -->
@@ -503,12 +502,12 @@ tailwind.config = {
             <span class="inline-block text-xs font-akshar uppercase tracking-[0.1em] text-amber-700 bg-amber-50 px-2 py-1 rounded">Solves: Agent goes rogue</span>
           </div>
           <h3 class="text-foreground text-xl font-semibold mb-3">xBPP Governance</h3>
-          <p class="text-muted-foreground text-sm leading-relaxed mb-4 flex-1">Every action policy-checked before execution. Domain allowlists, action type restrictions, per-session budgets, rate limiting, transaction thresholds with human escalation. Set it once per agent — enforced on every action.</p>
+          <p class="text-muted-foreground text-sm leading-relaxed mb-4 flex-1">Every action policy-checked before execution. Domain allowlists, action type restrictions, per-session budgets, rate limiting, transaction thresholds with human escalation. Import authenticated sessions with trust_mode: preserve — your LinkedIn session fingerprint stays intact.</p>
           <div class="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 mb-4 overflow-x-auto">
 <pre>{"policy": "prod-agent", "checks_passed": 12,
- "decision": "allow", "budget_remaining": 450}</pre>
+ "trust_mode": "preserve", "session": "imported"}</pre>
           </div>
-          <p class="text-xs font-akshar uppercase tracking-[0.1em] text-muted-foreground mt-auto pt-2 border-t border-gray-100">12 Policy Checks · Block / Allow / Escalate</p>
+          <p class="text-xs font-akshar uppercase tracking-[0.1em] text-muted-foreground mt-auto pt-2 border-t border-gray-100">12 Policy Checks · Session Import · Trust Preserve</p>
         </div>
 
         <!-- Card 3: Structured Output -->
@@ -516,13 +515,13 @@ tailwind.config = {
           <div class="mb-2">
             <span class="inline-block text-xs font-akshar uppercase tracking-[0.1em] text-blue-700 bg-blue-50 px-2 py-1 rounded">Solves: Agent returns pixels</span>
           </div>
-          <h3 class="text-foreground text-xl font-semibold mb-3">Structured Output</h3>
-          <p class="text-muted-foreground text-sm leading-relaxed mb-4 flex-1">Site Profiles turn the messy web into typed JSON. Navigate to Amazon — get price, title, rating, stock status as structured fields. No CSS selectors. No DOM parsing. No LLM re-extraction from screenshots.</p>
+          <h3 class="text-foreground text-xl font-semibold mb-3">Stateful Task Planner</h3>
+          <p class="text-muted-foreground text-sm leading-relaxed mb-4 flex-1">Send one goal. The planner decomposes it into steps, handles pagination, accumulates data across pages, and re-plans when something unexpected happens. SSE streaming shows progress in real-time. Resume from checkpoint if it crashes.</p>
           <div class="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 mb-4 overflow-x-auto">
-<pre>{"title": "AirPods Pro", "price": 249.99,
- "rating": 4.7, "availability": "in_stock"}</pre>
+<pre>{"step": 4, "total": 9, "extracted": 47,
+ "page": "2/3", "status": "paginating"}</pre>
           </div>
-          <p class="text-xs font-akshar uppercase tracking-[0.1em] text-muted-foreground mt-auto pt-2 border-t border-gray-100">3 Site Profiles · Typed JSON · Zod Validation</p>
+          <p class="text-xs font-akshar uppercase tracking-[0.1em] text-muted-foreground mt-auto pt-2 border-t border-gray-100">Multi-Page · SSE Streaming · Auto Re-Plan</p>
         </div>
       </div>
     </div>
@@ -589,14 +588,16 @@ tailwind.config = {
 
 <span class="text-blue-400">const</span> client = <span class="text-blue-400">new</span> <span class="text-amber-300">Aperture</span>({ apiKey: <span class="text-green-400">'ap_...'</span> })
 
-<span class="text-blue-400">const</span> result = <span class="text-blue-400">await</span> client
-  .<span class="text-amber-300">execute</span>(<span class="text-green-400">'Get AirPods Pro price on Amazon'</span>)
-  .<span class="text-amber-300">withPolicy</span>(<span class="text-green-400">'prod-agent'</span>)
-  .<span class="text-amber-300">withBudget</span>(<span class="text-amber-200">100</span>)
-  .<span class="text-amber-300">run</span>()
+<span class="text-gray-500">// Multi-page task with SSE streaming</span>
+<span class="text-blue-400">const</span> stream = <span class="text-blue-400">await</span> client
+  .<span class="text-amber-300">task</span>(<span class="text-green-400">'Extract LinkedIn connections pages 1-3'</span>)
+  .<span class="text-amber-300">withMode</span>(<span class="text-green-400">'hardened'</span>)
+  .<span class="text-amber-300">stream</span>()
 
-console.<span class="text-amber-300">log</span>(result.data)
-<span class="text-gray-500">// { title: "AirPods Pro", price: 249.99, ... }</span></pre>
+<span class="text-blue-400">for await</span> (<span class="text-blue-400">const</span> event <span class="text-blue-400">of</span> stream) {
+  console.<span class="text-amber-300">log</span>(event.type, event.extracted?.length)
+}
+<span class="text-gray-500">// progress 0  →  data 10  →  data 20  →  complete 30</span></pre>
           </div>
         </div>
 
@@ -661,8 +662,16 @@ console.<span class="text-amber-300">log</span>(result.data)
           </thead>
           <tbody class="text-sm">
             <tr class="border-b border-gray-100">
+              <td class="px-5 py-4 text-muted-foreground font-medium">TLS fingerprint</td>
+              <td class="px-5 py-4 text-foreground font-semibold">uTLS (real Chrome JA4)</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
+            </tr>
+            <tr class="border-b border-gray-100">
               <td class="px-5 py-4 text-muted-foreground font-medium">Anti-bot bypass</td>
-              <td class="px-5 py-4 text-foreground font-semibold">Auto-detect + Camoufox</td>
+              <td class="px-5 py-4 text-foreground font-semibold">SwiftShader + uTLS + Camoufox</td>
               <td class="px-5 py-4 text-muted-foreground">None</td>
               <td class="px-5 py-4 text-muted-foreground">None</td>
               <td class="px-5 py-4 text-muted-foreground">None</td>
@@ -691,6 +700,22 @@ console.<span class="text-amber-300">log</span>(result.data)
               <td class="px-5 py-4 text-muted-foreground">DOM</td>
               <td class="px-5 py-4 text-muted-foreground">Text</td>
               <td class="px-5 py-4 text-muted-foreground">Text</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="px-5 py-4 text-muted-foreground font-medium">Multi-page tasks</td>
+              <td class="px-5 py-4 text-foreground font-semibold">Stateful planner + SSE</td>
+              <td class="px-5 py-4 text-muted-foreground">Manual</td>
+              <td class="px-5 py-4 text-muted-foreground">Manual</td>
+              <td class="px-5 py-4 text-muted-foreground">Manual</td>
+              <td class="px-5 py-4 text-muted-foreground">Basic</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="px-5 py-4 text-muted-foreground font-medium">Session import</td>
+              <td class="px-5 py-4 text-foreground font-semibold">Cookie bridge + trust mode</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
+              <td class="px-5 py-4 text-muted-foreground">Manual</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
+              <td class="px-5 py-4 text-muted-foreground">None</td>
             </tr>
             <tr>
               <td class="px-5 py-4 text-muted-foreground font-medium">Pricing</td>
