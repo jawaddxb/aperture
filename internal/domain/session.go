@@ -48,7 +48,8 @@ type Session struct {
 // Implementations must be safe for concurrent use.
 type SessionManager interface {
 	// Create creates a new session with the given goal and acquires a browser.
-	Create(ctx context.Context, goal string) (*Session, error)
+	// meta is optional key-value annotations (e.g. "agent_id" for xBPP policy lookup).
+	Create(ctx context.Context, goal string, meta map[string]string) (*Session, error)
 
 	// Get retrieves a session by ID.
 	Get(ctx context.Context, id string) (*Session, error)

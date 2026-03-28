@@ -84,7 +84,7 @@ func NewDefaultSessionManager(cfg Config) *DefaultSessionManager {
 
 // Create creates a new session and acquires a browser instance from the pool.
 // Returns ErrConcurrentLimitExceeded when the active session count is at max.
-func (m *DefaultSessionManager) Create(ctx context.Context, goal string) (*domain.Session, error) {
+func (m *DefaultSessionManager) Create(ctx context.Context, goal string, meta map[string]string) (*domain.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -98,12 +98,16 @@ func (m *DefaultSessionManager) Create(ctx context.Context, goal string) (*domai
 	}
 
 	now := time.Now()
+	md := make(map[string]string)
+	for k, v := range meta {
+		md[k] = v
+	}
 	s := &domain.Session{
 		ID:        uuid.New().String(),
 		Status:    "active",
 		BrowserID: inst.ID(),
 		Goal:      goal,
-		Metadata:  make(map[string]string),
+		Metadata:  md,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

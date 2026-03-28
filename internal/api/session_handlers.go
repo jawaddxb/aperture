@@ -24,8 +24,9 @@ func NewSessionHandlers(manager domain.SessionManager) *SessionHandlers {
 
 // CreateSessionRequest is the JSON body for POST /api/v1/sessions.
 type CreateSessionRequest struct {
-	Goal   string                 `json:"goal"`
-	Config map[string]interface{} `json:"config,omitempty"`
+	Goal    string                 `json:"goal"`
+	AgentID string                 `json:"agent_id,omitempty"` // optional; used for xBPP policy lookup
+	Config  map[string]interface{} `json:"config,omitempty"`
 }
 
 // CreateSessionResponse is the JSON body returned for a created session.
@@ -62,7 +63,11 @@ func (h *SessionHandlers) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := h.manager.Create(r.Context(), req.Goal)
+	meta := map[string]string{}
+	if req.AgentID != "" {
+		meta["agent_id"] = req.AgentID
+	}
+	s, err := h.manager.Create(r.Context(), req.Goal, meta)
 	if err != nil {
 		if errors.Is(err, domain.ErrConcurrentLimitExceeded) {
 			writeError(w, http.StatusTooManyRequests, "LIMIT_EXCEEDED", err.Error())

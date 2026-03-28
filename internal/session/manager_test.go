@@ -103,7 +103,7 @@ func TestCreate_IDAndStatus(t *testing.T) {
 	mgr, _ := buildManager(5)
 	ctx := context.Background()
 
-	s, err := mgr.Create(ctx, "test goal")
+	s, err := mgr.Create(ctx, "test goal", nil)
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestGet_ReturnsSession(t *testing.T) {
 	mgr, _ := buildManager(5)
 	ctx := context.Background()
 
-	s, _ := mgr.Create(ctx, "goal")
+	s, _ := mgr.Create(ctx, "goal", nil)
 	got, err := mgr.Get(ctx, s.ID)
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
@@ -150,8 +150,8 @@ func TestList_ReturnsAllSessions(t *testing.T) {
 	mgr, _ := buildManager(5)
 	ctx := context.Background()
 
-	_, _ = mgr.Create(ctx, "goal1")
-	_, _ = mgr.Create(ctx, "goal2")
+	_, _ = mgr.Create(ctx, "goal1", nil)
+	_, _ = mgr.Create(ctx, "goal2", nil)
 
 	sessions, err := mgr.List(ctx)
 	if err != nil {
@@ -178,7 +178,7 @@ func TestExecute_EndToEnd(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	s, err := mgr.Create(ctx, "buy milk")
+	s, err := mgr.Create(ctx, "buy milk", nil)
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}
@@ -205,15 +205,15 @@ func TestConcurrentLimit(t *testing.T) {
 	mgr, _ := buildManager(2)
 	ctx := context.Background()
 
-	_, err := mgr.Create(ctx, "goal1")
+	_, err := mgr.Create(ctx, "goal1", nil)
 	if err != nil {
 		t.Fatalf("Create 1 error: %v", err)
 	}
-	_, err = mgr.Create(ctx, "goal2")
+	_, err = mgr.Create(ctx, "goal2", nil)
 	if err != nil {
 		t.Fatalf("Create 2 error: %v", err)
 	}
-	_, err = mgr.Create(ctx, "goal3")
+	_, err = mgr.Create(ctx, "goal3", nil)
 	if err != domain.ErrConcurrentLimitExceeded {
 		t.Errorf("expected ErrConcurrentLimitExceeded, got %v", err)
 	}
@@ -224,7 +224,7 @@ func TestDelete_ReleasesPool(t *testing.T) {
 	mgr, pool := buildManager(5)
 	ctx := context.Background()
 
-	s, _ := mgr.Create(ctx, "goal")
+	s, _ := mgr.Create(ctx, "goal", nil)
 	if err := mgr.Delete(ctx, s.ID); err != nil {
 		t.Fatalf("Delete error: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestConcurrentCreate(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := mgr.Create(ctx, "concurrent goal")
+			_, err := mgr.Create(ctx, "concurrent goal", nil)
 			if err != nil {
 				errs <- err
 			}

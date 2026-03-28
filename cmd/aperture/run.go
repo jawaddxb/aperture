@@ -84,7 +84,7 @@ func buildSessionManager(g *globalFlags) (*browserpool.Pool, *session.DefaultSes
 
 // executeGoal creates a session, runs it, prints the result and returns any error.
 func executeGoal(ctx context.Context, mgr *session.DefaultSessionManager, goal string) error {
-	sess, err := mgr.Create(ctx, goal)
+	sess, err := mgr.Create(ctx, goal, nil)
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)
 	}

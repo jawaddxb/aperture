@@ -25,7 +25,7 @@ func newStub() *stubSession {
 	return &stubSession{sessions: make(map[string]*domain.Session)}
 }
 
-func (s *stubSession) Create(_ context.Context, goal string) (*domain.Session, error) {
+func (s *stubSession) Create(_ context.Context, goal string, _ map[string]string) (*domain.Session, error) {
 	key := goal
 	if len(key) > 8 {
 		key = key[:8]

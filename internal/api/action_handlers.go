@@ -47,7 +47,7 @@ func (h *ActionHandlers) ExecuteAction(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	s, err := h.manager.Create(ctx, req.Goal)
+	s, err := h.manager.Create(ctx, req.Goal, nil)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", err.Error())
 		return

@@ -33,7 +33,7 @@ func newStubManager() *stubSessionManager {
 	return &stubSessionManager{sessions: make(map[string]*domain.Session)}
 }
 
-func (m *stubSessionManager) Create(_ context.Context, goal string) (*domain.Session, error) {
+func (m *stubSessionManager) Create(_ context.Context, goal string, _ map[string]string) (*domain.Session, error) {
 	if m.sessions == nil {
 		m.sessions = make(map[string]*domain.Session)
 	}

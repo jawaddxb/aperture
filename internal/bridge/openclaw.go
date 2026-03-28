@@ -182,7 +182,7 @@ func (b *OpenClawBridge) runTask(ctx context.Context, id string, req *domain.Tas
 		Goal: req.Goal,
 	}
 
-	session, err := b.sessions.Create(ctx, req.Goal)
+	session, err := b.sessions.Create(ctx, req.Goal, nil)
 	if err != nil {
 		resp.Error = fmt.Sprintf("create session: %s", err)
 		resp.Duration = time.Since(start)
