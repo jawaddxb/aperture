@@ -41,3 +41,10 @@ tmp/
 
 # Test artifacts
 testdata/*.generated.*
+
+# SDK dependencies
+packages/sdk/node_modules/
+packages/sdk/package-lock.json
+packages/sdk/dist/
+packages/mcp-server/node_modules/
+packages/mcp-server/dist/
