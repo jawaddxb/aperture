@@ -237,6 +237,13 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 	for i := range result.Steps {
 		result.Steps[i].Cost = domain.ActionCost(result.Steps[i].Step.Action)
 		totalCost += result.Steps[i].Cost
+
+		// Persist current URL and title from successful navigate actions.
+		if result.Steps[i].Step.Action == "navigate" && result.Steps[i].Result != nil &&
+			result.Steps[i].Result.Success && result.Steps[i].Result.PageState != nil {
+			session.CurrentURL = result.Steps[i].Result.PageState.URL
+			session.CurrentTitle = result.Steps[i].Result.PageState.Title
+		}
 	}
 	result.TotalCost = totalCost
 

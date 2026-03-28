@@ -34,6 +34,12 @@ type Session struct {
 	// Results holds per-step outcomes (nil until Execute is called).
 	Results []*StepResult
 
+	// CurrentURL is the URL of the last successfully navigated page.
+	CurrentURL string
+
+	// CurrentTitle is the title of the last successfully navigated page.
+	CurrentTitle string
+
 	// CreatedAt records when the session was created.
 	CreatedAt time.Time
 

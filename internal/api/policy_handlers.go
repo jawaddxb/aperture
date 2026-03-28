@@ -24,15 +24,15 @@ func NewPolicyHandlers(engine domain.PolicyEngine) *PolicyHandlers {
 func (h *PolicyHandlers) Get(w http.ResponseWriter, r *http.Request) {
 	agentID := chi.URLParam(r, "agent_id")
 	pol := h.engine.GetPolicy(agentID)
+	var message interface{}
 	if pol == nil {
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"agent_id": agentID,
-			"policy":   nil,
-			"message":  "no policy set, agent operates in open/dev mode",
-		})
-		return
+		message = "no policy set, agent operates in open/dev mode"
 	}
-	writeJSON(w, http.StatusOK, pol)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"agent_id": agentID,
+		"policy":   pol,
+		"message":  message,
+	})
 }
 
 // Upsert handles PUT /api/v1/policies/{agent_id}.

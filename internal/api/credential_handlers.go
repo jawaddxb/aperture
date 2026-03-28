@@ -66,14 +66,11 @@ func (h *CredentialHandlers) Store(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Response never includes password.
-	writeJSON(w, http.StatusOK, domain.CredentialSummary{
-		Domain:      domainName,
-		Username:    req.Username,
-		HasPassword: req.Password != "",
-		HasTOTP:     req.TOTPSeed != "",
-		AutoLogin:   req.AutoLogin,
-		Metadata:    req.Metadata,
+	// Return status response.
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status":   "ok",
+		"agent_id": agentID,
+		"domain":   domainName,
 	})
 }
 

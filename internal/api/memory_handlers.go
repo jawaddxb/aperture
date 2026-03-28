@@ -5,6 +5,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/go-chi/chi/v5"
@@ -72,7 +73,13 @@ func (h *MemoryHandlers) SetKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// Return the stored entry.
+	entry := &domain.MemoryEntry{
+		Key:       key,
+		Value:     req.Value,
+		UpdatedAt: time.Now().UTC(),
+	}
+	writeJSON(w, http.StatusOK, entry)
 }
 
 // DeleteKey handles DELETE /api/v1/agents/{agent_id}/memory/{key}.

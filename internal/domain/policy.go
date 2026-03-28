@@ -24,12 +24,12 @@ type PolicyDecision struct {
 // AgentPolicy defines the rules for a specific agent.
 type AgentPolicy struct {
 	AgentID                 string       `json:"agent_id"`
-	DomainAllowlist         []string     `json:"domain_allowlist,omitempty"`
-	DomainBlocklist         []string     `json:"domain_blocklist,omitempty"`
-	ActionAllowlist         []string     `json:"action_allowlist,omitempty"`
+	DomainAllowlist         []string     `json:"allowed_domains,omitempty"`
+	DomainBlocklist         []string     `json:"blocked_domains,omitempty"`
+	ActionAllowlist         []string     `json:"allowed_action_types,omitempty"`
 	MaxActionsPerSession    int          `json:"max_actions_per_session,omitempty"`
 	BudgetCredits           int          `json:"budget_credits,omitempty"`
-	RateLimitPerMin         int          `json:"rate_limit_per_min,omitempty"`
+	RateLimitPerMin         int          `json:"rate_limit_rpm,omitempty"`
 	TransactionThresholdUSD float64      `json:"transaction_threshold_usd,omitempty"`
 	EscalationWebhook       string       `json:"escalation_webhook,omitempty"`
 	CustomRules             []PolicyRule `json:"custom_rules,omitempty"`

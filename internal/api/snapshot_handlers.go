@@ -38,17 +38,17 @@ func (h *SessionHandlers) Snapshot(w http.ResponseWriter, r *http.Request) {
 	resp := SnapshotResponse{
 		SessionID:        s.ID,
 		Status:           s.Status,
+		URL:              s.CurrentURL,
+		Title:            s.CurrentTitle,
 		StructuredData:   make(map[string]interface{}),
 		AvailableActions: []string{},
 	}
 
-	// Extract page state from the most recent result.
+	// Extract profile and structured data from the most recent result.
 	if s.Plan != nil && len(s.Results) > 0 {
 		last := s.Results[len(s.Results)-1]
 		if last.Result != nil && last.Result.PageState != nil {
 			ps := last.Result.PageState
-			resp.URL = ps.URL
-			resp.Title = ps.Title
 			resp.ProfileMatched = ps.ProfileMatched
 			if ps.StructuredData != nil {
 				resp.StructuredData = ps.StructuredData
