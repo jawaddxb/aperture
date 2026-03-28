@@ -347,6 +347,13 @@ func (m *DefaultSessionManager) finaliseSession(id string, result *domain.RunRes
 		s.Status = "failed"
 	}
 	s.UpdatedAt = time.Now()
+
+	// Release browser instance back to the pool for terminal sessions.
+	// Without this, the pool leaks one instance per completed session.
+	if inst, ok := m.browsers[id]; ok {
+		m.pool.Release(inst)
+		delete(m.browsers, id)
+	}
 }
 
 // extractDomain returns the host portion of a URL, or the input unchanged
