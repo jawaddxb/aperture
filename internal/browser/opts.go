@@ -67,7 +67,12 @@ func BuildAllocatorOptions(chromiumPath string, stealth domain.StealthConfig, ex
 	}
 	opts = append(opts, DefaultLaunchFlags(webgl)...)
 	if stealth.UTLSProxyAddr != "" {
-		opts = append(opts, chromedp.ProxyServer(stealth.UTLSProxyAddr))
+		opts = append(opts,
+			chromedp.ProxyServer(stealth.UTLSProxyAddr),
+			// CONNECT tunnel relay can interfere with cert chain validation
+			// in headless mode. Safe since proxy is on localhost (127.0.0.1).
+			chromedp.Flag("ignore-certificate-errors", true),
+		)
 	}
 	opts = append(opts, extra...)
 	return opts

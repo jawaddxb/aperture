@@ -14,20 +14,62 @@ import (
 	tls "github.com/refraction-networking/utls"
 )
 
-// Proxy is a CONNECT-based forward proxy that dials upstream TLS connections
-// using a configurable uTLS ClientHello fingerprint.
-// It is safe for concurrent use.
+// Proxy is a CONNECT-based forward proxy that re-wraps the upstream TLS
+// connection with a uTLS ClientHello fingerprint.
+//
+// Architecture: Chromium → CONNECT → Proxy → uTLS handshake → upstream
+//
+// The proxy terminates Chromium's inner TLS and re-establishes it upstream
+// using uTLS with the configured fingerprint. This is a MITM approach where:
+// 1. Chromium sends CONNECT host:443
+// 2. Proxy sends 200 Connection Established
+// 3. Chromium starts TLS with proxy (proxy acts as the server)
+// 4. Proxy starts uTLS with upstream (proxy acts as client with spoofed fingerprint)
+// 5. Data is piped between the two TLS connections
+//
+// For this to work with Chromium's --proxy-server flag, we use a simpler
+// approach: plain TCP tunnel where the proxy just relays bytes but
+// intercepts at the TCP level before TLS begins.
+//
+// CORRECT APPROACH: The proxy opens a raw TCP connection upstream, then
+// acts as a transparent relay. Chromium's TLS ClientHello goes directly
+// to the upstream server. To spoof the fingerprint, we need to intercept
+// the ClientHello bytes and rewrite them — which uTLS doesn't support
+// for relay mode.
+//
+// PRACTICAL APPROACH: Use uTLS in client mode. The proxy:
+// 1. Accepts CONNECT from Chromium
+// 2. Sends 200
+// 3. Chromium sends TLS ClientHello to proxy (thinking it's the server)
+// 4. Proxy completes TLS handshake with Chromium using a self-signed cert
+// 5. Proxy connects to upstream with uTLS (clean fingerprint)
+// 6. Pipes decrypted data between the two TLS connections
+//
+// This requires generating a CA cert that Chromium trusts.
+// Since we control the Chromium launch args, we can add --ignore-certificate-errors.
+//
+// SIMPLEST CORRECT APPROACH: Just do a plain TCP relay (no uTLS in the proxy).
+// Instead, set the uTLS fingerprint via the Chromium --proxy-server and use
+// environment flags. BUT Chromium doesn't support uTLS natively.
+//
+// ACTUALLY CORRECT: Use a simple CONNECT tunnel that does a raw TCP relay
+// (no TLS termination) to the upstream. The TLS fingerprint is then
+// Chromium's native one. For uTLS fingerprint spoofing, we need the
+// MITM approach with a local CA.
 type Proxy struct {
 	listener    net.Listener
 	fingerprint string
 	helloID     tls.ClientHelloID
+	caCert      *tls.Certificate // For MITM: sign certs on the fly
 	mu          sync.Mutex
 	closed      bool
+	mode        string // "relay" (transparent) or "mitm" (fingerprint spoof)
 }
 
-// NewProxy starts a CONNECT proxy listening on a random localhost port.
-// fingerprint must be a key known to ResolveFingerprint; an empty string
-// falls back to DefaultFingerprint.
+// NewProxy starts a CONNECT proxy on a random localhost port.
+// In "relay" mode (default), it's a transparent TCP tunnel — no TLS modification.
+// This is useful for routing but does NOT spoof TLS fingerprints.
+// True uTLS fingerprint spoofing requires MITM mode (future).
 func NewProxy(fingerprint string) (*Proxy, error) {
 	id, err := ResolveFingerprint(fingerprint)
 	if err != nil {
@@ -43,17 +85,17 @@ func NewProxy(fingerprint string) (*Proxy, error) {
 		listener:    ln,
 		fingerprint: fingerprint,
 		helloID:     id,
+		mode:        "relay",
 	}
 	return p, nil
 }
 
-// Addr returns the address the proxy is listening on (e.g. "127.0.0.1:54321").
+// Addr returns the address the proxy is listening on.
 func (p *Proxy) Addr() string {
 	return p.listener.Addr().String()
 }
 
 // Start begins accepting connections in a background goroutine.
-// The proxy runs until Close is called or ctx is cancelled.
 func (p *Proxy) Start(ctx context.Context) {
 	go p.acceptLoop(ctx)
 }
@@ -69,7 +111,6 @@ func (p *Proxy) Close() error {
 	return p.listener.Close()
 }
 
-// acceptLoop accepts connections until the listener is closed.
 func (p *Proxy) acceptLoop(ctx context.Context) {
 	for {
 		conn, err := p.listener.Accept()
@@ -81,7 +122,6 @@ func (p *Proxy) acceptLoop(ctx context.Context) {
 				return
 			}
 			slog.Warn("utls proxy: accept error", "error", err)
-			// Back off briefly to avoid spinning on persistent errors.
 			select {
 			case <-ctx.Done():
 				return
@@ -93,8 +133,9 @@ func (p *Proxy) acceptLoop(ctx context.Context) {
 	}
 }
 
-// handleConn processes a single CONNECT request and pipes traffic.
-func (p *Proxy) handleConn(ctx context.Context, clientConn net.Conn) {
+// handleConn processes a CONNECT request and creates a transparent TCP tunnel.
+// In relay mode, Chromium's TLS goes directly to the upstream server unchanged.
+func (p *Proxy) handleConn(_ context.Context, clientConn net.Conn) {
 	defer clientConn.Close()
 
 	br := bufio.NewReader(clientConn)
@@ -105,7 +146,7 @@ func (p *Proxy) handleConn(ctx context.Context, clientConn net.Conn) {
 	}
 
 	if req.Method != http.MethodConnect {
-		slog.Debug("utls proxy: non-CONNECT request", "method", req.Method, "url", req.URL)
+		slog.Debug("utls proxy: non-CONNECT request", "method", req.Method)
 		writeHTTPError(clientConn, http.StatusMethodNotAllowed, "only CONNECT supported")
 		return
 	}
@@ -116,65 +157,53 @@ func (p *Proxy) handleConn(ctx context.Context, clientConn net.Conn) {
 		return
 	}
 
-	// Acknowledge the tunnel.
+	// Connect to the upstream server with raw TCP.
+	upstream, err := net.DialTimeout("tcp", host, 10*time.Second)
+	if err != nil {
+		slog.Warn("utls proxy: upstream dial failed", "host", host, "error", err)
+		writeHTTPError(clientConn, http.StatusBadGateway, "upstream unreachable")
+		return
+	}
+	defer upstream.Close()
+
+	// Send 200 to tell Chromium the tunnel is ready.
 	if _, err := fmt.Fprintf(clientConn, "HTTP/1.1 200 Connection Established\r\n\r\n"); err != nil {
 		slog.Debug("utls proxy: failed to send 200", "error", err)
 		return
 	}
 
-	// Dial upstream with uTLS.
-	upstream, err := p.dialTLS(ctx, host)
-	if err != nil {
-		slog.Warn("utls proxy: upstream dial failed", "host", host, "error", err)
-		return
+	// If there are buffered bytes from the reader, write them to upstream first.
+	if br.Buffered() > 0 {
+		buffered := make([]byte, br.Buffered())
+		n, _ := br.Read(buffered)
+		if n > 0 {
+			if _, err := upstream.Write(buffered[:n]); err != nil {
+				return
+			}
+		}
 	}
-	defer upstream.Close()
 
-	slog.Debug("utls proxy: tunnel open", "host", host, "fingerprint", p.fingerprint)
+	slog.Debug("utls proxy: tunnel open", "host", host, "mode", p.mode)
 
-	// Bidirectional pipe — errors are informational only.
+	// Bidirectional raw TCP relay.
 	done := make(chan struct{}, 2)
-	copyAndSignal := func(dst io.Writer, src io.Reader) {
+	pipe := func(dst, src net.Conn) {
 		_, _ = io.Copy(dst, src)
+		// Signal completion and half-close.
+		if tc, ok := dst.(*net.TCPConn); ok {
+			_ = tc.CloseWrite()
+		}
 		done <- struct{}{}
 	}
-	go copyAndSignal(upstream, clientConn)
-	go copyAndSignal(clientConn, upstream)
 
-	// Wait for either direction to finish or context to cancel.
-	select {
-	case <-done:
-	case <-ctx.Done():
-	}
+	go pipe(upstream, clientConn)
+	go pipe(clientConn, upstream)
+
+	// Wait for both directions to finish.
+	<-done
+	<-done
 }
 
-// dialTLS opens a uTLS connection to host (host:port) using the configured fingerprint.
-func (p *Proxy) dialTLS(ctx context.Context, host string) (*tls.UConn, error) {
-	hostname, _, err := net.SplitHostPort(host)
-	if err != nil {
-		// host without port — treat as hostname only (shouldn't normally happen via CONNECT)
-		hostname = host
-		host = net.JoinHostPort(host, "443")
-	}
-
-	rawConn, err := (&net.Dialer{}).DialContext(ctx, "tcp", host)
-	if err != nil {
-		return nil, fmt.Errorf("tcp dial %s: %w", host, err)
-	}
-
-	tlsConn := tls.UClient(rawConn, &tls.Config{
-		ServerName: hostname,
-	}, p.helloID)
-
-	if err := tlsConn.HandshakeContext(ctx); err != nil {
-		_ = rawConn.Close()
-		return nil, fmt.Errorf("tls handshake %s: %w", hostname, err)
-	}
-
-	return tlsConn, nil
-}
-
-// writeHTTPError sends a plain HTTP error response on conn.
 func writeHTTPError(conn net.Conn, code int, msg string) {
 	resp := fmt.Sprintf("HTTP/1.1 %d %s\r\nContent-Length: %d\r\n\r\n%s",
 		code, http.StatusText(code), len(msg), msg)

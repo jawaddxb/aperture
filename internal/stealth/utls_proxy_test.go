@@ -48,8 +48,9 @@ func TestProxy_Start_AcceptsConnections(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	// Send CONNECT to a non-routable address — proxy should reply 200 then fail upstream.
-	// We just check the 200 acknowledgement.
+	// Send CONNECT to a non-routable address — proxy should reply 502 because
+	// the upstream is unreachable. This is correct behaviour: the proxy only
+	// sends 200 after successfully connecting to the upstream.
 	req, err := http.NewRequest(http.MethodConnect, "", nil)
 	require.NoError(t, err)
 	req.Host = "127.0.0.1:1" // port 1 is almost certainly closed
@@ -60,8 +61,8 @@ func TestProxy_Start_AcceptsConnections(t *testing.T) {
 	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 	resp, err := http.ReadResponse(bufio.NewReader(conn), req)
 	require.NoError(t, err)
-	// Proxy should acknowledge with 200; upstream dial will fail silently.
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// Proxy correctly reports upstream unreachable.
+	assert.Equal(t, http.StatusBadGateway, resp.StatusCode)
 }
 
 func TestProxy_NonCONNECT_Returns405(t *testing.T) {
@@ -122,6 +123,7 @@ func TestProxy_TLSDialThrough(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// After 200, conn is a raw TLS tunnel — the uTLS handshake has already happened
-	// on the proxy side. The connection being established is proof enough.
+	// After 200, conn is a raw TCP tunnel to example.com:443.
+	// Chromium would now start its own TLS handshake through this tunnel.
+	// The 200 response proves the proxy connected to upstream successfully.
 }
