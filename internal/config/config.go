@@ -6,6 +6,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -126,6 +127,10 @@ func LoadFromFile(path string) (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
+	// Explicitly bind env vars for nested keys — AutomaticEnv() alone does not
+	// reliably resolve nested struct fields (known viper limitation).
+	bindEnvs(v)
+
 	// Ignore file-not-found; env vars alone can supply all values.
 	if err := v.ReadInConfig(); err != nil {
 		var notFoundErr viper.ConfigFileNotFoundError
@@ -144,6 +149,36 @@ func LoadFromFile(path string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// bindEnvs explicitly maps APERTURE_* env vars to nested config keys.
+// This works around a known viper limitation where AutomaticEnv() does not
+// resolve nested mapstructure keys when using SetEnvKeyReplacer.
+func bindEnvs(v *viper.Viper) {
+	envMap := map[string]string{
+		"server.port":                    "APERTURE_SERVER_PORT",
+		"server.host":                    "APERTURE_SERVER_HOST",
+		"browser.chromium_path":          "APERTURE_BROWSER_CHROMIUM_PATH",
+		"browser.pool_size":              "APERTURE_BROWSER_POOL_SIZE",
+		"browser.skip_pre_warm":          "APERTURE_BROWSER_SKIP_PRE_WARM",
+		"browser.proxy_url":              "APERTURE_BROWSER_PROXY_URL",
+		"llm.provider":                   "APERTURE_LLM_PROVIDER",
+		"llm.model":                      "APERTURE_LLM_MODEL",
+		"llm.api_key":                    "APERTURE_LLM_API_KEY",
+		"llm.base_url":                   "APERTURE_LLM_BASE_URL",
+		"api.keys":                       "APERTURE_API_KEYS",
+		"api.require_auth":               "APERTURE_API_REQUIRE_AUTH",
+		"api.rate_limit_rpm":             "APERTURE_API_RATE_LIMIT_RPM",
+		"api.cors_origins":               "APERTURE_API_CORS_ORIGINS",
+		"log.level":                      "APERTURE_LOG_LEVEL",
+		"sqlite.path":                    "APERTURE_SQLITE_PATH",
+		"redis.url":                      "APERTURE_REDIS_URL",
+		"bridge.max_concurrent_tasks":    "APERTURE_BRIDGE_MAX_CONCURRENT_TASKS",
+		"bridge.task_timeout_seconds":    "APERTURE_BRIDGE_TASK_TIMEOUT_SECONDS",
+	}
+	for key, env := range envMap {
+		_ = v.BindEnv(key, env)
+	}
 }
 
 // setDefaults registers non-security-sensitive defaults.
@@ -168,8 +203,28 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("stealth.mock_plugins", true)
 }
 
+// chromiumCandidates is the ordered list of paths tried when
+// APERTURE_BROWSER_CHROMIUM_PATH is not explicitly set.
+var chromiumCandidates = []string{
+	"/usr/bin/chromium",
+	"/usr/bin/chromium-browser",
+	"/usr/bin/google-chrome",
+	"/usr/bin/google-chrome-stable",
+	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	"/Applications/Chromium.app/Contents/MacOS/Chromium",
+}
+
 // validate checks that required fields are present.
 func validate(cfg *Config) error {
+	if cfg.Browser.ChromiumPath == "" {
+		// Auto-detect common Chromium locations.
+		for _, candidate := range chromiumCandidates {
+			if fileExists(candidate) {
+				cfg.Browser.ChromiumPath = candidate
+				break
+			}
+		}
+	}
 	if cfg.Browser.ChromiumPath == "" {
 		return errors.New("browser.chromium_path is required")
 	}
@@ -183,4 +238,10 @@ func validate(cfg *Config) error {
 func isFileNotFoundError(err error) bool {
 	return strings.Contains(err.Error(), "no such file") ||
 		strings.Contains(err.Error(), "cannot find the file")
+}
+
+// fileExists returns true if the given path exists on disk.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
