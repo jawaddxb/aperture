@@ -44,6 +44,10 @@ type RunResult struct {
 
 	// TotalCost is the sum of all step costs in credits.
 	TotalCost int `json:"total_cost"`
+
+	// CreditsRemaining is the account's credit balance after deduction.
+	// Only populated when billing is active.
+	CreditsRemaining int `json:"credits_remaining,omitempty"`
 }
 
 // Sequencer executes a Plan against a BrowserInstance and returns a RunResult.

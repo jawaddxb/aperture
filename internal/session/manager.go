@@ -5,10 +5,12 @@ package session
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"sync"
 	"time"
 
+	"github.com/ApertureHQ/aperture/internal/billing"
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/google/uuid"
 )
@@ -35,6 +37,10 @@ type Config struct {
 	// Optional.
 	PolicyEngine domain.PolicyEngine
 
+	// Billing, when set, enables credit deduction after session execution.
+	// Optional.
+	Billing *billing.AccountService
+
 	// MaxConcurrent is the maximum number of active sessions allowed at once.
 	// Defaults to 5 when zero.
 	MaxConcurrent int
@@ -48,6 +54,7 @@ type DefaultSessionManager struct {
 	sequencer     domain.Sequencer
 	authPersist   domain.AuthPersistence
 	policyEngine  domain.PolicyEngine
+	billing       *billing.AccountService
 	maxConcurrent int
 
 	mu       sync.RWMutex
@@ -77,6 +84,7 @@ func NewDefaultSessionManager(cfg Config) *DefaultSessionManager {
 		sequencer:     cfg.Sequencer,
 		authPersist:   cfg.AuthPersistence,
 		policyEngine:  cfg.PolicyEngine,
+		billing:       cfg.Billing,
 		maxConcurrent: max,
 		sessions:      make(map[string]*domain.Session),
 		browsers:      make(map[string]domain.BrowserInstance),
@@ -246,6 +254,17 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 		}
 	}
 	result.TotalCost = totalCost
+
+	// Deduct credits from account if billing is active.
+	if m.billing != nil {
+		if acct := billing.AccountFromContext(ctx); acct != nil {
+			newBalance, err := m.billing.DeductCredits(acct.ID, totalCost, "session_execute", id)
+			if err != nil {
+				slog.Warn("credit deduction failed", "error", err, "account", acct.ID, "cost", totalCost)
+			}
+			result.CreditsRemaining = newBalance
+		}
+	}
 
 	// Persist cookies for future sessions.
 	if m.authPersist != nil {

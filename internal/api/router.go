@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/ApertureHQ/aperture/internal/billing"
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -57,6 +58,9 @@ type RouterConfig struct {
 	// AgentStateStore, when set, enables agent memory KV endpoints.
 	AgentStateStore domain.AgentStateStore
 
+	// AccountService, when set, enables billing-aware auth and admin endpoints.
+	AccountService *billing.AccountService
+
 	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
 	Auth AuthConfig
 
@@ -101,8 +105,12 @@ func NewRouter(cfgs ...RouterConfig) http.Handler {
 // registerV1Routes mounts all /api/v1/* routes with optional API key auth.
 func registerV1Routes(r chi.Router, cfg RouterConfig) {
 	r.Route("/api/v1", func(r chi.Router) {
-		// Apply API key auth to all API routes (skips health/website).
-		r.Use(APIKeyAuth(cfg.Auth))
+		// Use billing-aware auth when AccountService is available, else legacy key map.
+		if cfg.AccountService != nil {
+			r.Use(billing.AuthMiddleware(cfg.AccountService, []string{"/health", "/website"}))
+		} else {
+			r.Use(APIKeyAuth(cfg.Auth))
+		}
 		sh := NewSessionHandlers(cfg.SessionManager)
 		r.Post("/sessions", sh.Create)
 		r.Get("/sessions", sh.List)
@@ -169,6 +177,22 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 			Logger:  cfg.Logger,
 			Metrics: cfg.MetricsCollector,
 		})
+
+		// Admin routes (requires is_admin on API key).
+		if cfg.AccountService != nil {
+			ah := NewAdminHandlers(cfg.AccountService)
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(billing.AdminOnly(cfg.AccountService))
+				r.Post("/accounts", ah.CreateAccount)
+				r.Get("/accounts", ah.ListAccounts)
+				r.Get("/accounts/{id}", ah.GetAccount)
+				r.Post("/accounts/{id}/credits", ah.AddCredits)
+				r.Get("/accounts/{id}/usage", ah.GetUsage)
+				r.Post("/accounts/{id}/keys", ah.CreateAPIKey)
+				r.Delete("/accounts/{id}/keys/{key}", ah.RevokeAPIKey)
+				r.Get("/stats", ah.GetStats)
+			})
+		}
 	})
 }
 

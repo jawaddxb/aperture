@@ -721,7 +721,7 @@ img { max-width: 100%; display: block; }
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-5);
   margin-top: var(--space-7);
 }
@@ -992,15 +992,19 @@ img { max-width: 100%; display: block; }
   .pricing-grid { grid-template-columns: repeat(2, 1fr); }
   .sdk-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: repeat(2, 1fr); }
+  .governance-grid { grid-template-columns: 1fr; }
+  .deploy-grid { grid-template-columns: 1fr; }
+  .use-cases-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
   .section-heading { font-size: 32px; }
   .hero h1 { font-size: 36px; }
   .hero { padding: var(--space-8) 0 var(--space-7); }
-  .problem, .how-it-works, .comparison, .xbpp, .profiles, .pricing, .sdk {
+  .problem, .how-it-works, .comparison, .xbpp, .profiles, .pricing, .sdk, .governance, .use-cases, .deploy {
     padding: var(--space-8) 0;
   }
+  .use-cases-grid { grid-template-columns: 1fr; }
   .hero-metrics { flex-direction: column; gap: var(--space-4); }
   .hero-ctas { flex-direction: column; }
   .hero-ctas .btn { width: 100%; justify-content: center; }
@@ -1021,6 +1025,206 @@ img { max-width: 100%; display: block; }
   .hero h1 { font-size: 30px; }
   .section-heading { font-size: 26px; }
 }
+
+/* ============================================================
+   AGENT GOVERNANCE
+   ============================================================ */
+.governance {
+  padding: var(--space-10) 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.governance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-7);
+  margin-top: var(--space-7);
+  align-items: start;
+}
+
+.governance-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.governance-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  transition: border-color var(--duration-base);
+}
+.governance-card:hover { border-color: var(--border-strong); }
+
+.governance-card h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+}
+
+.governance-card p {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+.governance-code {
+  background: var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.governance-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+
+.governance-code pre {
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.7);
+  overflow-x: auto;
+}
+
+.governance-code .key { color: #D4875A; }
+.governance-code .str { color: #A8B89C; }
+.governance-code .num { color: #E8A87C; }
+
+.governance-code-note {
+  padding: 12px 20px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   USE CASES
+   ============================================================ */
+.use-cases {
+  padding: var(--space-10) 0;
+}
+
+.use-cases-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+}
+
+.use-case {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--duration-base);
+}
+.use-case:hover { border-color: var(--border-strong); }
+
+.use-case h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+}
+
+.use-case p {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+}
+
+.use-case-output {
+  background: var(--ink);
+  border-radius: var(--radius);
+  margin-top: auto;
+}
+
+.use-case-output pre {
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.65);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ============================================================
+   DEPLOY
+   ============================================================ */
+.deploy {
+  padding: var(--space-10) 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.deploy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+}
+
+.deploy-block {
+  background: var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.deploy-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.deploy-block-lang {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+}
+
+.deploy-block pre {
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.7);
+  overflow-x: auto;
+}
+
+.deploy-block .kw { color: #E8A87C; }
+.deploy-block .cm { color: rgba(255,255,255,0.3); }
+
+.credit-table {
+  text-align: center;
+}
+
+.credit-table .comparison-table {
+  margin: 0 auto;
+}
 </style>
 </head>
 <body>
@@ -1039,10 +1243,11 @@ img { max-width: 100%; display: block; }
       aperture
     </a>
     <ul class="nav-links">
-      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#governance">Governance</a></li>
+      <li><a href="#how-it-works">Architecture</a></li>
+      <li><a href="#use-cases">Use Cases</a></li>
       <li><a href="#pricing">Pricing</a></li>
       <li><a href="#sdk">SDK</a></li>
-      <li><a href="https://docs.aperture.dev">Docs</a></li>
     </ul>
     <div class="nav-right" style="display: flex; align-items: center; gap: 24px;">
       <div id="status-indicator" style="display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted);">
@@ -1148,6 +1353,48 @@ console.<span class="fn">log</span>(page.structured_data.price);
 </section>
 
 <!-- ============================================================
+     AGENT GOVERNANCE
+     ============================================================ -->
+<section class="governance" id="governance">
+  <div class="container">
+    <div class="label">Agent Governance</div>
+    <h2 class="section-heading">Agent Governance Built&nbsp;In</h2>
+    <p class="section-desc">The first browser engine with policy enforcement. Every action is checked, every domain is scoped, every spend is tracked.</p>
+
+    <div class="governance-grid">
+      <div class="governance-cards stagger">
+        <div class="governance-card reveal">
+          <h3>Domain Scoping</h3>
+          <p>Define which sites your agent can visit. Wildcards supported. Everything else is blocked before the browser even opens.</p>
+        </div>
+        <div class="governance-card reveal">
+          <h3>Action Limits</h3>
+          <p>Set max actions per session, rate limits per minute, allowed action types. Agents can't go rogue.</p>
+        </div>
+        <div class="governance-card reveal">
+          <h3>Spend Thresholds</h3>
+          <p>Set credit budgets per agent. When an agent tries to exceed its limit, the action is escalated for human approval instead of executed.</p>
+        </div>
+      </div>
+      <div class="governance-code">
+        <div class="governance-code-header">
+          <span>xBPP Policy</span>
+          <span>per-agent config</span>
+        </div>
+<pre>{
+  <span class="key">"allowed_domains"</span>: [<span class="str">"*.amazon.com"</span>, <span class="str">"*.google.com"</span>],
+  <span class="key">"allowed_action_types"</span>: [<span class="str">"navigate"</span>, <span class="str">"extract"</span>, <span class="str">"screenshot"</span>],
+  <span class="key">"max_actions_per_session"</span>: <span class="num">50</span>,
+  <span class="key">"budget_credits"</span>: <span class="num">500</span>,
+  <span class="key">"rate_limit_rpm"</span>: <span class="num">30</span>
+}</pre>
+        <p class="governance-code-note">Set this once per agent. Every action is checked against it in &lt;10ms.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
      HOW IT WORKS
      ============================================================ -->
 <section class="how-it-works" id="how-it-works">
@@ -1190,6 +1437,44 @@ console.<span class="fn">log</span>(page.structured_data.price);
 </section>
 
 <!-- ============================================================
+     USE CASES
+     ============================================================ -->
+<section class="use-cases" id="use-cases">
+  <div class="container">
+    <div class="label">Use Cases</div>
+    <h2 class="section-heading">What agents actually build with&nbsp;Aperture</h2>
+
+    <div class="use-cases-grid stagger">
+      <div class="use-case reveal">
+        <h3>Price Intelligence</h3>
+        <p>Monitor competitor pricing across 50 SKUs daily. Auto-handles Cloudflare-protected sites.</p>
+        <div class="use-case-output"><pre>{"product":"AirPods Pro","price":249.99,"stock":"in_stock","retailer":"amazon.com"}</pre></div>
+      </div>
+      <div class="use-case reveal">
+        <h3>Research Agents</h3>
+        <p>Feed a company name, get a structured profile from LinkedIn + Crunchbase + their website.</p>
+        <div class="use-case-output"><pre>{"company":"Acme","employees":150,"funding":"$12M","latest_news":"..."}</pre></div>
+      </div>
+      <div class="use-case reveal">
+        <h3>Form Automation</h3>
+        <p>Fill and submit procurement forms across supplier portals. Credential vault handles login.</p>
+        <div class="use-case-output"><pre>{"form_submitted":true,"confirmation":"PO-2026-0423","cost":1}</pre></div>
+      </div>
+      <div class="use-case reveal">
+        <h3>Shopping Agents</h3>
+        <p>Find best price across retailers. Policy engine prevents unauthorized spend.</p>
+        <div class="use-case-output"><pre>{"best_price":348.00,"retailer":"amazon.com","policy_check":"ALLOW"}</pre></div>
+      </div>
+      <div class="use-case reveal">
+        <h3>Compliance Monitoring</h3>
+        <p>Check competitor changelog/blog weekly. Extract structured updates.</p>
+        <div class="use-case-output"><pre>{"changes":[{"date":"2026-03-25","title":"New pricing","impact":"high"}]}</pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
      COMPARISON TABLE
      ============================================================ -->
 <section class="comparison">
@@ -1201,10 +1486,13 @@ console.<span class="fn">log</span>(page.structured_data.price);
     <table class="comparison-table">
       <thead>
         <tr>
-          <th style="width:22%">Dimension</th>
-          <th style="width:22%">Browserbase</th>
-          <th style="width:22%">Playwright</th>
-          <th style="width:34%">Aperture</th>
+          <th style="width:16%">Dimension</th>
+          <th style="width:14%">Browserbase</th>
+          <th style="width:14%">Playwright</th>
+          <th style="width:14%">Stagehand</th>
+          <th style="width:14%">Skyvern</th>
+          <th style="width:14%">Browseruse</th>
+          <th style="width:14%">Aperture</th>
         </tr>
       </thead>
       <tbody>
@@ -1212,55 +1500,82 @@ console.<span class="fn">log</span>(page.structured_data.price);
           <td>Anti-bot bypass</td>
           <td class="cross">None</td>
           <td class="cross">None</td>
-          <td><strong>Auto-detect + Camoufox fallback</strong></td>
+          <td class="cross">None</td>
+          <td>Basic</td>
+          <td class="cross">None</td>
+          <td><strong>Auto-detect + Camoufox</strong></td>
         </tr>
         <tr>
           <td>Stealth hardening</td>
           <td>Basic</td>
           <td class="cross">None</td>
-          <td>12-layer engine (canvas, WebRTC, viewport, mouse…)</td>
+          <td class="cross">None</td>
+          <td>Basic</td>
+          <td class="cross">None</td>
+          <td>12-layer engine</td>
         </tr>
         <tr>
           <td>Input</td>
           <td>CDP commands</td>
-          <td>CSS selectors / XPath</td>
-          <td>Natural language — <code class="mono" style="font-size:12px;color:var(--copper);">"Extract the top 3 posts"</code></td>
+          <td>CSS / XPath</td>
+          <td>Natural language</td>
+          <td>Natural language</td>
+          <td>Natural language</td>
+          <td>Natural language</td>
         </tr>
         <tr>
           <td>LLM planning</td>
           <td class="cross">None</td>
           <td class="cross">None</td>
-          <td>OpenRouter-powered multi-step planning</td>
+          <td>Single-step</td>
+          <td>Multi-step</td>
+          <td>Multi-step</td>
+          <td>Multi-step planning</td>
         </tr>
         <tr>
           <td>Data extraction</td>
-          <td>Screenshots only</td>
+          <td>Screenshots</td>
           <td>DOM parsing</td>
-          <td>Schema-based LLM extraction → typed JSON</td>
+          <td>LLM extraction</td>
+          <td>LLM extraction</td>
+          <td>LLM extraction</td>
+          <td>Schema-based typed JSON</td>
         </tr>
         <tr>
           <td>Cloudflare bypass</td>
           <td class="cross">Blocked</td>
           <td class="cross">Blocked</td>
-          <td><strong>✓ Scrapling/Camoufox auto-fallback</strong></td>
+          <td class="cross">Blocked</td>
+          <td class="cross">Blocked</td>
+          <td class="cross">Blocked</td>
+          <td class="check">&#10003; Camoufox fallback</td>
+        </tr>
+        <tr>
+          <td>Agent governance</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td><strong>xBPP policy engine</strong></td>
         </tr>
         <tr>
           <td>MCP integration</td>
           <td class="cross">None</td>
           <td class="cross">None</td>
-          <td>5 native MCP tools (stdio)</td>
-        </tr>
-        <tr>
-          <td>Typical code</td>
-          <td>50+ lines / task</td>
-          <td>40+ lines / task</td>
-          <td><strong>1 MCP call</strong></td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td class="cross">None</td>
+          <td>5 native MCP tools</td>
         </tr>
         <tr>
           <td>Cost</td>
           <td>~$0.10/min</td>
           <td>Free + infra</td>
-          <td>Open source — self-hosted, free</td>
+          <td>Free + infra</td>
+          <td>SaaS pricing</td>
+          <td>Free + infra</td>
+          <td>Open source — free</td>
         </tr>
       </tbody>
     </table>
@@ -1387,48 +1702,83 @@ console.<span class="fn">log</span>(page.structured_data.price);
 </section>
 
 <!-- ============================================================
+     DEPLOY
+     ============================================================ -->
+<section class="deploy" id="deploy">
+  <div class="container">
+    <div class="label">Getting Started</div>
+    <h2 class="section-heading">Deploy in 60 seconds</h2>
+    <p class="section-desc">Two ways to get started. Both take under a minute.</p>
+
+    <div class="deploy-grid">
+      <div class="deploy-block">
+        <div class="deploy-block-header">
+          <span class="deploy-block-lang">Docker</span>
+        </div>
+<pre><span class="kw">docker run</span> -p 8080:8080 \
+  -e APERTURE_LLM_API_KEY=sk-or-... \
+  ghcr.io/aperturehq/aperture:latest
+
+<span class="kw">curl</span> localhost:8080/health
+<span class="cm"># {"status":"ok"}</span></pre>
+      </div>
+      <div class="deploy-block">
+        <div class="deploy-block-header">
+          <span class="deploy-block-lang">Railway (one-click)</span>
+        </div>
+<pre><span class="cm"># 1. Fork github.com/ApertureHQ/aperture</span>
+<span class="cm"># 2. Connect to Railway</span>
+<span class="cm"># 3. Set APERTURE_LLM_API_KEY in env vars</span>
+<span class="cm"># 4. Deploy</span>
+
+<span class="kw">curl</span> your-app.up.railway.app/health
+<span class="cm"># {"status":"ok"}</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
      PRICING
      ============================================================ -->
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="label">Pricing</div>
-    <h2 class="section-heading">Open source. Self-hosted. Free.</h2>
-    <p class="section-desc">Aperture is MIT-licensed. Run it on your machine. No API keys to us, no usage limits, no vendor lock-in.</p>
+    <h2 class="section-heading">Simple, transparent pricing</h2>
+    <p class="section-desc">Self-host for free. Or let us run the infrastructure.</p>
 
     <div class="pricing-grid">
       <!-- Self-Hosted -->
       <div class="pricing-card featured">
-        <div class="pricing-featured-tag">Available Now</div>
+        <div class="pricing-featured-tag">Most Popular</div>
         <div class="pricing-tier">Self-Hosted</div>
         <div class="pricing-price">$0 <span class="period">forever</span></div>
-        <div class="pricing-credits">MIT License — use commercially</div>
+        <div class="pricing-credits">Full engine, all features</div>
         <ul class="pricing-features">
-          <li>Full browser automation engine</li>
-          <li>5 MCP tools (execute, screenshot, extract…)</li>
-          <li>12-layer stealth hardening</li>
-          <li>Cloudflare / PerimeterX / DataDome bypass</li>
-          <li>LLM planning (bring your own key)</li>
-          <li>Scrapling / Camoufox auto-fallback</li>
-          <li>Unlimited sessions &amp; agents</li>
+          <li>Bring your own LLM key</li>
+          <li>Unlimited sessions</li>
+          <li>12-layer stealth engine</li>
+          <li>xBPP policy governance</li>
+          <li>All MCP tools</li>
+          <li>Community support</li>
         </ul>
-        <a href="https://github.com/jawaddxb/aperture" class="btn btn-primary">Clone from GitHub</a>
+        <a href="https://github.com/ApertureHQ/aperture" class="btn btn-primary">Clone from GitHub</a>
       </div>
 
       <!-- Cloud -->
       <div class="pricing-card">
         <div class="pricing-tier">Cloud</div>
-        <div class="pricing-price">Coming Soon</div>
-        <div class="pricing-credits">Managed infrastructure — zero ops</div>
+        <div class="pricing-price">$19 <span class="period">/mo</span></div>
+        <div class="pricing-credits">5,000 credits/mo — or $49 for 20,000</div>
         <ul class="pricing-features">
-          <li>Everything in Self-Hosted</li>
           <li>Managed browser pool</li>
-          <li>Global proxy network</li>
+          <li>No infrastructure to maintain</li>
+          <li>Dashboard &amp; usage analytics</li>
           <li>Auto-scaling sessions</li>
-          <li>Dashboard &amp; monitoring</li>
-          <li>Team management</li>
-          <li>Priority support</li>
+          <li>Email support</li>
+          <li>99.9% uptime SLA</li>
         </ul>
-        <a href="https://github.com/jawaddxb/aperture" class="btn btn-secondary">Star on GitHub</a>
+        <a href="#" class="btn btn-secondary">Get API Key</a>
       </div>
 
       <!-- Enterprise -->
@@ -1437,16 +1787,33 @@ console.<span class="fn">log</span>(page.structured_data.price);
         <div class="pricing-price">Custom</div>
         <div class="pricing-credits">Dedicated infrastructure + SLA</div>
         <ul class="pricing-features">
-          <li>Everything in Cloud</li>
           <li>Dedicated browser pool</li>
           <li>On-prem deployment</li>
-          <li>Custom proxy integration</li>
           <li>SSO / SAML</li>
+          <li>SLA + dedicated support</li>
+          <li>Custom proxy integration</li>
           <li>Compliance package</li>
-          <li>Dedicated support engineer</li>
         </ul>
-        <a href="https://github.com/jawaddxb/aperture/issues" class="btn btn-secondary">Open an Issue</a>
+        <a href="https://github.com/ApertureHQ/aperture/issues" class="btn btn-secondary">Contact Us</a>
       </div>
+    </div>
+
+    <div class="credit-table" style="margin-top:var(--space-7);">
+      <table class="comparison-table" style="max-width:600px;">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Credits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Navigate</td><td>5</td></tr>
+          <tr><td>Extract</td><td>3</td></tr>
+          <tr><td>Screenshot</td><td>10</td></tr>
+          <tr><td>Click / Type / Scroll</td><td>1</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:14px;color:var(--ink-muted);margin-top:var(--space-4);">5,000 credits ≈ 1,000 page navigations or 1,600 data extractions</p>
     </div>
   </div>
 </section>

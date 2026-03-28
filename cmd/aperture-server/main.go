@@ -14,6 +14,7 @@ import (
 
 	"github.com/ApertureHQ/aperture/internal/api"
 	"github.com/ApertureHQ/aperture/internal/auth"
+	"github.com/ApertureHQ/aperture/internal/billing"
 	"github.com/ApertureHQ/aperture/internal/bridge"
 	browserpool "github.com/ApertureHQ/aperture/internal/browser"
 	"github.com/ApertureHQ/aperture/internal/config"
@@ -111,6 +112,16 @@ func main() {
 	agentStateStore := memory.NewInMemoryKV()
 	slog.Info("agent state KV store enabled")
 
+	// Billing: SQLite-backed credit system.
+	billingDB, err := billing.InitDB("aperture.db")
+	if err != nil {
+		slog.Error("failed to initialize billing database", "error", err)
+		os.Exit(1)
+	}
+	defer billingDB.Close()
+	accountService := billing.NewAccountService(billingDB)
+	slog.Info("billing system initialized")
+
 	// Progress emitter for WebSocket streaming.
 	emitter := stream.NewChannelEmitter()
 
@@ -120,6 +131,7 @@ func main() {
 		Sequencer:       seq,
 		AuthPersistence: authPersist,
 		PolicyEngine:    policyEngine,
+		Billing:         accountService,
 	})
 
 	screenshotSrv := browserpool.NewScreenshotService(pool)
@@ -142,6 +154,7 @@ func main() {
 		ProfileManager:    profileMgr,
 		CredentialVault:   vault,
 		AgentStateStore:   agentStateStore,
+		AccountService:    accountService,
 		Auth:              buildAuthConfig(cfg),
 		RateLimit:         api.RateLimitConfig{RequestsPerMinute: cfg.API.RateLimitRPM},
 		CORSOrigins:       cfg.API.CORSOrigins,
