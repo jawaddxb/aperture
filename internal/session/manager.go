@@ -111,8 +111,15 @@ func (m *DefaultSessionManager) Create(ctx context.Context, goal string, meta ma
 	for k, v := range meta {
 		md[k] = v
 	}
+	// Extract account ID from billing context (empty in dev mode).
+	accountID := ""
+	if acct := billing.AccountFromContext(ctx); acct != nil {
+		accountID = acct.ID
+	}
+
 	s := &domain.Session{
 		ID:        uuid.New().String(),
+		AccountID: accountID,
 		Status:    "active",
 		BrowserID: inst.ID(),
 		Goal:      goal,
@@ -191,6 +198,11 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 	inst, session, err := m.lockedLookup(id)
 	if err != nil {
 		return nil, err
+	}
+
+	// Guard: only active sessions can be executed.
+	if session.Status != "active" {
+		return nil, fmt.Errorf("session %s is %s (only active sessions can be executed)", id, session.Status)
 	}
 
 	plan, err := m.planner.Plan(ctx, session.Goal, nil)
@@ -297,6 +309,10 @@ func (m *DefaultSessionManager) lockedLookup(id string) (domain.BrowserInstance,
 	s, ok := m.sessions[id]
 	if !ok {
 		return nil, nil, domain.ErrSessionNotFound
+	}
+	// Guard: completed/failed sessions have had their browser released.
+	if s.Status == "completed" || s.Status == "failed" {
+		return nil, nil, fmt.Errorf("session %s is %s (browser released)", id, s.Status)
 	}
 	inst, ok := m.browsers[id]
 	if !ok {

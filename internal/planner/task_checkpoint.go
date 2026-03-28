@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ApertureHQ/aperture/internal/domain"
 )
@@ -29,8 +30,14 @@ func SaveCheckpoint(dir string, taskCtx *domain.TaskContext) error {
 }
 
 // LoadCheckpoint reads and unmarshals a TaskContext from dir/<checkpointID>.json.
+// checkpointID must be a simple name (no path separators or traversal).
 func LoadCheckpoint(dir, checkpointID string) (*domain.TaskContext, error) {
-	path := filepath.Join(dir, checkpointID+".json")
+	// Sanitize: strip any path separators or traversal attempts.
+	clean := filepath.Base(checkpointID)
+	if clean != checkpointID || clean == "." || clean == ".." || strings.ContainsAny(clean, `/\`) {
+		return nil, fmt.Errorf("checkpoint: invalid checkpoint_id %q", checkpointID)
+	}
+	path := filepath.Join(dir, clean+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("checkpoint: read %s: %w", path, err)

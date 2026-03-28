@@ -9,9 +9,26 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ApertureHQ/aperture/internal/billing"
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/go-chi/chi/v5"
 )
+
+// checkSessionOwnership verifies the caller owns the session.
+// Returns nil if ownership is valid or billing is not active (dev mode).
+// Returns an error string if access should be denied.
+func checkSessionOwnership(ctx context.Context, session *domain.Session) bool {
+	acct := billing.AccountFromContext(ctx)
+	// Dev mode: no billing context → allow all.
+	if acct == nil {
+		return true
+	}
+	// Session has no account (created in dev mode) → allow all.
+	if session.AccountID == "" {
+		return true
+	}
+	return acct.ID == session.AccountID
+}
 
 // SessionHandlers groups HTTP handlers for session lifecycle endpoints.
 // All handlers receive a SessionManager via constructor (dependency inversion).
@@ -95,9 +112,15 @@ func (h *SessionHandlers) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Filter sessions by account ownership.
+	acct := billing.AccountFromContext(r.Context())
 	out := make([]SessionDetailResponse, 0, len(sessions))
 	for _, s := range sessions {
-		out = append(out, sessionToDetail(s))
+		// Dev mode (no billing): show all.
+		// Billing active: only show sessions owned by this account.
+		if acct == nil || s.AccountID == "" || s.AccountID == acct.ID {
+			out = append(out, sessionToDetail(s))
+		}
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -115,15 +138,34 @@ func (h *SessionHandlers) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !checkSessionOwnership(r.Context(), s) {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")
+		return
+	}
+
 	writeJSON(w, http.StatusOK, sessionToDetail(s))
 }
 
 // Execute handles POST /api/v1/sessions/:id/execute.
 func (h *SessionHandlers) Execute(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	// Ownership check: verify caller owns this session.
+	s, err := h.manager.Get(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrSessionNotFound) {
+			writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "GET_FAILED", err.Error())
+		return
+	}
+	if !checkSessionOwnership(r.Context(), s) {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")
+		return
+	}
+
 	// Hard timeout: 60s for the entire execution (plan + all steps).
-	// Individual steps have their own 30s timeout, but chromedp may not
-	// always respect context cancellation for certain page load states.
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 	result, err := h.manager.Execute(ctx, id)
@@ -148,6 +190,22 @@ func (h *SessionHandlers) Execute(w http.ResponseWriter, r *http.Request) {
 // Delete handles DELETE /api/v1/sessions/:id.
 func (h *SessionHandlers) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	// Ownership check.
+	s, err := h.manager.Get(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrSessionNotFound) {
+			writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "GET_FAILED", err.Error())
+		return
+	}
+	if !checkSessionOwnership(r.Context(), s) {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")
+		return
+	}
+
 	if err := h.manager.Delete(r.Context(), id); err != nil {
 		if errors.Is(err, domain.ErrSessionNotFound) {
 			writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")

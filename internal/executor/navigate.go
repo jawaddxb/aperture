@@ -84,6 +84,11 @@ func (e *NavigateExecutor) Execute(
 		return failResult(result, start, err), nil
 	}
 
+	// SSRF protection: validate URL before navigation.
+	if err := validateNavigateURL(rawURL); err != nil {
+		return failResult(result, start, fmt.Errorf("url_blocked: %w", err)), nil
+	}
+
 	timeout := defaultNavigateTimeout
 	if v, ok := params["timeout"]; ok {
 		if d, ok := v.(time.Duration); ok {

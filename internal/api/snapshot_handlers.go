@@ -35,6 +35,11 @@ func (h *SessionHandlers) Snapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !checkSessionOwnership(r.Context(), s) {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "session not found")
+		return
+	}
+
 	resp := SnapshotResponse{
 		SessionID:        s.ID,
 		Status:           s.Status,

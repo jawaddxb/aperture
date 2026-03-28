@@ -19,6 +19,10 @@ type Session struct {
 	// ID is the UUID v4 identifier for this session.
 	ID string
 
+	// AccountID is the billing account that owns this session.
+	// Empty in dev mode (no billing). When set, access is restricted to this account.
+	AccountID string
+
 	// Status is one of: "active", "paused", "completed", "failed".
 	Status string
 
