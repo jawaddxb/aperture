@@ -99,6 +99,9 @@ type UTLSConfig struct {
 	// Fingerprint selects the ClientHello profile (e.g. "chrome_120", "firefox_121").
 	// Defaults to "chrome_120" when empty.
 	Fingerprint string `mapstructure:"fingerprint"`
+	// Mode selects the proxy strategy: "relay" (transparent TCP tunnel, default)
+	// or "mitm" (real TLS fingerprint spoofing via uTLS).
+	Mode string `mapstructure:"mode"`
 }
 
 // StealthYAML holds YAML-mapped stealth settings.
@@ -217,6 +220,7 @@ func bindEnvs(v *viper.Viper) {
 		"api.request_timeout_seconds":    "APERTURE_API_REQUEST_TIMEOUT_SECONDS",
 		"llm.max_steps_per_task":         "APERTURE_LLM_MAX_STEPS_PER_TASK",
 		"llm.max_calls_per_session":      "APERTURE_LLM_MAX_CALLS_PER_SESSION",
+		"stealth.utls.mode":              "APERTURE_STEALTH_UTLS_MODE",
 		"checkpoint_ttl_hours":           "APERTURE_CHECKPOINT_TTL_HOURS",
 	}
 	for key, env := range envMap {
@@ -246,6 +250,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("llm.max_steps_per_task", 20)
 	v.SetDefault("llm.max_calls_per_session", 50)
 	v.SetDefault("checkpoint_ttl_hours", 24)
+	v.SetDefault("stealth.utls.mode", "relay")
 	v.SetDefault("stealth.enabled", true)
 	v.SetDefault("stealth.hide_webdriver", true)
 	v.SetDefault("stealth.canvas_noise", false)   // Disabled by default — SwiftShader replaces it

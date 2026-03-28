@@ -3,11 +3,13 @@ package stealth
 import (
 	"bufio"
 	"context"
+	stdtls "crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,7 +62,7 @@ type Proxy struct {
 	listener    net.Listener
 	fingerprint string
 	helloID     tls.ClientHelloID
-	caCert      *tls.Certificate // For MITM: sign certs on the fly
+	ca          *CA    // For MITM mode: dynamic cert generation
 	mu          sync.Mutex
 	closed      bool
 	mode        string // "relay" (transparent) or "mitm" (fingerprint spoof)
@@ -86,6 +88,36 @@ func NewProxy(fingerprint string) (*Proxy, error) {
 		fingerprint: fingerprint,
 		helloID:     id,
 		mode:        "relay",
+	}
+	return p, nil
+}
+
+// NewMITMProxy starts a CONNECT proxy that performs true TLS fingerprint
+// spoofing. It terminates TLS from Chromium with a dynamically-generated cert,
+// then re-establishes the upstream connection using uTLS with the target
+// ClientHello fingerprint.
+func NewMITMProxy(fingerprint string) (*Proxy, error) {
+	id, err := ResolveFingerprint(fingerprint)
+	if err != nil {
+		return nil, fmt.Errorf("utls mitm proxy: %w", err)
+	}
+
+	ca, err := NewCA()
+	if err != nil {
+		return nil, fmt.Errorf("utls mitm proxy: %w", err)
+	}
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, fmt.Errorf("utls mitm proxy: listen: %w", err)
+	}
+
+	p := &Proxy{
+		listener:    ln,
+		fingerprint: fingerprint,
+		helloID:     id,
+		ca:          ca,
+		mode:        "mitm",
 	}
 	return p, nil
 }
@@ -133,9 +165,18 @@ func (p *Proxy) acceptLoop(ctx context.Context) {
 	}
 }
 
-// handleConn processes a CONNECT request and creates a transparent TCP tunnel.
-// In relay mode, Chromium's TLS goes directly to the upstream server unchanged.
-func (p *Proxy) handleConn(_ context.Context, clientConn net.Conn) {
+// handleConn dispatches to relay or MITM mode based on the proxy configuration.
+func (p *Proxy) handleConn(ctx context.Context, clientConn net.Conn) {
+	if p.mode == "mitm" {
+		p.handleMITM(ctx, clientConn)
+	} else {
+		p.handleRelay(ctx, clientConn)
+	}
+}
+
+// handleRelay processes a CONNECT request and creates a transparent TCP tunnel.
+// Chromium's TLS goes directly to the upstream server unchanged.
+func (p *Proxy) handleRelay(_ context.Context, clientConn net.Conn) {
 	defer clientConn.Close()
 
 	br := bufio.NewReader(clientConn)
@@ -186,22 +227,137 @@ func (p *Proxy) handleConn(_ context.Context, clientConn net.Conn) {
 	slog.Debug("utls proxy: tunnel open", "host", host, "mode", p.mode)
 
 	// Bidirectional raw TCP relay.
+	pipeConns(clientConn, upstream)
+}
+
+// handleMITM performs a true MITM TLS interception:
+//  1. Read CONNECT from Chromium, extract host
+//  2. Dial upstream TCP
+//  3. Send 200 to Chromium
+//  4. Perform uTLS handshake with upstream (spoofed fingerprint)
+//  5. Generate dynamic cert for host via CA
+//  6. Perform standard TLS handshake with Chromium (as server)
+//  7. Bidirectional pipe between the two TLS connections
+func (p *Proxy) handleMITM(_ context.Context, clientConn net.Conn) {
+	defer clientConn.Close()
+
+	br := bufio.NewReader(clientConn)
+	req, err := http.ReadRequest(br)
+	if err != nil {
+		slog.Debug("utls proxy mitm: failed to read request", "error", err)
+		return
+	}
+
+	if req.Method != http.MethodConnect {
+		slog.Debug("utls proxy mitm: non-CONNECT request", "method", req.Method)
+		writeHTTPError(clientConn, http.StatusMethodNotAllowed, "only CONNECT supported")
+		return
+	}
+
+	host := req.Host
+	if host == "" {
+		writeHTTPError(clientConn, http.StatusBadRequest, "missing host")
+		return
+	}
+
+	// Extract the hostname without port for certificate generation.
+	hostname := host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		hostname = h
+	}
+
+	// Ensure host has a port for dialing.
+	dialHost := host
+	if !strings.Contains(host, ":") {
+		dialHost = host + ":443"
+	}
+
+	// Step 1: Dial upstream with raw TCP.
+	rawUpstream, err := net.DialTimeout("tcp", dialHost, 10*time.Second)
+	if err != nil {
+		slog.Warn("utls proxy mitm: upstream dial failed", "host", host, "error", err)
+		writeHTTPError(clientConn, http.StatusBadGateway, "upstream unreachable")
+		return
+	}
+	defer rawUpstream.Close()
+
+	// Step 2: Send 200 to Chromium before starting TLS.
+	if _, err := fmt.Fprintf(clientConn, "HTTP/1.1 200 Connection Established\r\n\r\n"); err != nil {
+		slog.Debug("utls proxy mitm: failed to send 200", "error", err)
+		return
+	}
+
+	// Drain any buffered bytes into clientConn's underlying connection.
+	// After the 200, Chromium will start a TLS handshake, so we need a raw conn.
+	var rawClient net.Conn
+	if br.Buffered() > 0 {
+		rawClient = &prefixConn{Reader: br, Conn: clientConn}
+	} else {
+		rawClient = clientConn
+	}
+
+	// Step 3: uTLS handshake with upstream (spoofed fingerprint).
+	utlsConn := tls.UClient(rawUpstream, &tls.Config{
+		ServerName:         hostname,
+		InsecureSkipVerify: true, //nolint:gosec // MITM proxy intentionally skips upstream cert verification
+		NextProtos:         []string{"http/1.1"}, // Force HTTP/1.1 — no h2 initially
+	}, p.helloID)
+	if err := utlsConn.Handshake(); err != nil {
+		slog.Warn("utls proxy mitm: upstream TLS handshake failed", "host", host, "error", err)
+		return
+	}
+	defer utlsConn.Close()
+
+	// Step 4: Generate a dynamic certificate for this host.
+	cert, err := p.ca.IssueCert(hostname)
+	if err != nil {
+		slog.Warn("utls proxy mitm: cert generation failed", "host", hostname, "error", err)
+		return
+	}
+
+	// Step 5: Standard TLS handshake with Chromium (proxy acts as server).
+	// Use crypto/tls (NOT utls) for the server side.
+	tlsServer := stdtls.Server(rawClient, &stdtls.Config{
+		Certificates: []stdtls.Certificate{*cert},
+		NextProtos:   []string{"http/1.1"},
+	})
+	if err := tlsServer.Handshake(); err != nil {
+		slog.Debug("utls proxy mitm: client TLS handshake failed", "host", host, "error", err)
+		return
+	}
+	defer tlsServer.Close()
+
+	slog.Debug("utls proxy mitm: tunnel open", "host", host, "fingerprint", p.fingerprint)
+
+	// Step 6: Bidirectional pipe between Chromium TLS and upstream uTLS.
+	pipeConns(tlsServer, utlsConn)
+}
+
+// pipeConns does a bidirectional copy between two connections.
+func pipeConns(a, b net.Conn) {
 	done := make(chan struct{}, 2)
 	pipe := func(dst, src net.Conn) {
 		_, _ = io.Copy(dst, src)
-		// Signal completion and half-close.
 		if tc, ok := dst.(*net.TCPConn); ok {
 			_ = tc.CloseWrite()
 		}
 		done <- struct{}{}
 	}
-
-	go pipe(upstream, clientConn)
-	go pipe(clientConn, upstream)
-
-	// Wait for both directions to finish.
+	go pipe(a, b)
+	go pipe(b, a)
 	<-done
 	<-done
+}
+
+// prefixConn wraps a buffered reader with a net.Conn so that any bytes already
+// buffered by the reader are consumed before reading from the underlying conn.
+type prefixConn struct {
+	io.Reader
+	net.Conn
+}
+
+func (c *prefixConn) Read(b []byte) (int, error) {
+	return c.Reader.Read(b)
 }
 
 func writeHTTPError(conn net.Conn, code int, msg string) {

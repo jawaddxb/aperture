@@ -51,7 +51,17 @@ func main() {
 		if fp == "" {
 			fp = stealth.DefaultFingerprint
 		}
-		proxy, proxyErr := stealth.NewProxy(fp)
+		proxyMode := cfg.Stealth.UTLS.Mode
+		if proxyMode == "" {
+			proxyMode = "relay"
+		}
+		var proxy *stealth.Proxy
+		var proxyErr error
+		if proxyMode == "mitm" {
+			proxy, proxyErr = stealth.NewMITMProxy(fp)
+		} else {
+			proxy, proxyErr = stealth.NewProxy(fp)
+		}
 		if proxyErr != nil {
 			slog.Error("failed to start utls proxy", "error", proxyErr)
 			os.Exit(1)
@@ -60,7 +70,7 @@ func main() {
 		stealthCfg.UTLSProxyAddr = proxy.Addr()
 		stealthCfg.UTLSEnabled = true
 		stealthCfg.UTLSFingerprint = fp
-		slog.Info("utls proxy started", "addr", proxy.Addr(), "fingerprint", fp)
+		slog.Info("utls proxy started", "addr", proxy.Addr(), "fingerprint", fp, "mode", proxyMode)
 		defer proxy.Close()
 	}
 
