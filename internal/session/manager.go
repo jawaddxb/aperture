@@ -26,6 +26,10 @@ type Config struct {
 	// Required.
 	Sequencer domain.Sequencer
 
+	// AuthPersistence, when set, enables saving/restoring cookies across sessions.
+	// Optional.
+	AuthPersistence domain.AuthPersistence
+
 	// MaxConcurrent is the maximum number of active sessions allowed at once.
 	// Defaults to 5 when zero.
 	MaxConcurrent int
@@ -37,6 +41,7 @@ type DefaultSessionManager struct {
 	pool          domain.BrowserPool
 	planner       domain.Planner
 	sequencer     domain.Sequencer
+	authPersist   domain.AuthPersistence
 	maxConcurrent int
 
 	mu       sync.RWMutex
@@ -64,6 +69,7 @@ func NewDefaultSessionManager(cfg Config) *DefaultSessionManager {
 		pool:          cfg.Pool,
 		planner:       cfg.Planner,
 		sequencer:     cfg.Sequencer,
+		authPersist:   cfg.AuthPersistence,
 		maxConcurrent: max,
 		sessions:      make(map[string]*domain.Session),
 		browsers:      make(map[string]domain.BrowserInstance),
@@ -94,6 +100,11 @@ func (m *DefaultSessionManager) Create(ctx context.Context, goal string) (*domai
 		Metadata:  make(map[string]string),
 		CreatedAt: now,
 		UpdatedAt: now,
+	}
+
+	// Restore previously saved cookies into this browser instance.
+	if m.authPersist != nil {
+		_ = m.authPersist.LoadCookies(ctx, s.ID, inst) // best-effort
 	}
 
 	m.sessions[s.ID] = s
@@ -175,6 +186,11 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 	if err != nil {
 		m.markFailed(id)
 		return nil, fmt.Errorf("execute: %w", err)
+	}
+
+	// Persist cookies for future sessions.
+	if m.authPersist != nil {
+		_ = m.authPersist.SaveCookies(ctx, id, inst) // best-effort
 	}
 
 	m.finaliseSession(id, result)

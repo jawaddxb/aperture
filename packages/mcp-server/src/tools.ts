@@ -3,8 +3,8 @@
  * Single responsibility: describe the 4 tools; no execution logic.
  */
 
-/** ToolName enumerates the 5 Aperture MCP tools. */
-export type ToolName = 'execute' | 'screenshot' | 'navigation' | 'pool_status' | 'extract';
+/** ToolName enumerates the 6 Aperture MCP tools. */
+export type ToolName = 'execute' | 'screenshot' | 'navigation' | 'pool_status' | 'extract' | 'vision';
 
 /** ToolDefinition is the MCP tool descriptor shape used in listTools. */
 export interface ToolDefinition {
@@ -135,6 +135,27 @@ export const ALL_TOOLS: ToolDefinition[] = [
         },
       },
       required: ['url', 'schema'],
+    },
+  },
+  {
+    name: 'vision',
+    description:
+      'Analyze a screenshot of a URL using vision AI. ' +
+      'Captures the page and returns a structured description of visible elements, ' +
+      'layout, and suggested next actions.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL to navigate to and analyze.',
+        },
+        prompt: {
+          type: 'string',
+          description: 'Optional prompt guiding what to focus on in the analysis.',
+        },
+      },
+      required: ['url'],
     },
   },
 ];

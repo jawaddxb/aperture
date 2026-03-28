@@ -28,6 +28,8 @@ export class ToolHandlers {
         return this.handlePoolStatus();
       case 'extract':
         return this.handleExtract(args);
+      case 'vision':
+        return this.handleVision(args);
       default:
         return this.errorResult(`Unknown tool: ${name}`);
     }
@@ -163,6 +165,29 @@ export class ToolHandlers {
       };
     } catch (err) {
       return this.errorResult(`extract failed: ${(err as Error).message}`);
+    }
+  }
+
+  private async handleVision(args: Record<string, unknown>): Promise<CallToolResult> {
+    const url = String(args.url ?? '');
+    if (!url) {
+      return this.errorResult('vision: "url" is required');
+    }
+
+    const prompt = args.prompt !== undefined ? String(args.prompt) : undefined;
+
+    try {
+      const result = await this.client.vision({ url, prompt });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      return this.errorResult(`vision failed: ${(err as Error).message}`);
     }
   }
 

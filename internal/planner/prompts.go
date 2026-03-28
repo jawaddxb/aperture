@@ -29,6 +29,8 @@ Available actions and their required params:
               optional: selector:string (scope to sub-tree)
   upload      target:string (file input selector), path:string (local file path)
   pause       reason:string (pause for human intervention, e.g. CAPTCHA)
+  new_tab     url:string (open URL in a new tab)
+  switch_tab  tab_id:string (switch to a tab by ID)
 
 Response format:
   A JSON array of step objects. Each step:

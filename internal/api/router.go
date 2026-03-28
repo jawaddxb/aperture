@@ -39,6 +39,9 @@ type RouterConfig struct {
 	// Logger, when set, is used for bridge request/response logging.
 	Logger domain.ActionLogger
 
+	// VisionAnalyzer, when set, enables POST /api/v1/actions/vision.
+	VisionAnalyzer domain.VisionAnalyzer
+
 	// HITLManager, when set, enables HITL intervention endpoints.
 	HITLManager domain.HITLManager
 
@@ -98,6 +101,11 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 		ah := NewActionHandlers(cfg.SessionManager, cfg.ScreenshotService)
 		r.Post("/actions/execute", ah.ExecuteAction)
 		r.Post("/actions/screenshot", ah.Screenshot)
+
+		if cfg.VisionAnalyzer != nil {
+			vh := NewVisionHandlers(cfg.ScreenshotService, cfg.VisionAnalyzer)
+			r.Post("/actions/vision", vh.Analyze)
+		}
 
 		if cfg.ProgressEmitter != nil {
 			wsh := NewStreamHandler(cfg.ProgressEmitter)

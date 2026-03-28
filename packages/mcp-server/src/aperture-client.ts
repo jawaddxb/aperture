@@ -65,6 +65,19 @@ export interface ScreenshotResponse {
   url: string;
 }
 
+/** VisionParams holds parameters for a vision analysis call. */
+export interface VisionParams {
+  url: string;
+  prompt?: string;
+}
+
+/** VisionResponse holds the structured vision analysis result. */
+export interface VisionResponse {
+  description: string;
+  elements: Array<{ type: string; description: string; selector: string }>;
+  suggested_steps: string[];
+}
+
 /** ApertureClient is the HTTP client for the Aperture service. */
 export class ApertureClient {
   private readonly baseURL: string;
@@ -145,6 +158,14 @@ export class ApertureClient {
       goal,
       url: params.url,
       config: { timeout: 60 },
+    });
+  }
+
+  /** vision analyzes a screenshot of a URL using vision AI. */
+  async vision(params: VisionParams): Promise<VisionResponse> {
+    return this.post<VisionResponse>('/api/v1/actions/vision', {
+      url: params.url,
+      prompt: params.prompt,
     });
   }
 
