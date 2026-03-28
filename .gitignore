@@ -7,7 +7,7 @@ coverage.html
 coverage.out
 
 # Build artifacts
-aperture-server
+/aperture-server
 
 # Config (keep example, ignore real config)
 aperture.yaml

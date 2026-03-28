@@ -30,6 +30,10 @@ type Config struct {
 	// Optional.
 	AuthPersistence domain.AuthPersistence
 
+	// PolicyEngine, when set, gates every action against xBPP policies.
+	// Optional.
+	PolicyEngine domain.PolicyEngine
+
 	// MaxConcurrent is the maximum number of active sessions allowed at once.
 	// Defaults to 5 when zero.
 	MaxConcurrent int
@@ -42,6 +46,7 @@ type DefaultSessionManager struct {
 	planner       domain.Planner
 	sequencer     domain.Sequencer
 	authPersist   domain.AuthPersistence
+	policyEngine  domain.PolicyEngine
 	maxConcurrent int
 
 	mu       sync.RWMutex
@@ -70,6 +75,7 @@ func NewDefaultSessionManager(cfg Config) *DefaultSessionManager {
 		planner:       cfg.Planner,
 		sequencer:     cfg.Sequencer,
 		authPersist:   cfg.AuthPersistence,
+		policyEngine:  cfg.PolicyEngine,
 		maxConcurrent: max,
 		sessions:      make(map[string]*domain.Session),
 		browsers:      make(map[string]domain.BrowserInstance),
@@ -181,6 +187,32 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 	}
 
 	m.setSessionPlan(id, plan)
+
+	// xBPP policy gate: check each step against policy before execution.
+	if m.policyEngine != nil {
+		agentID := session.Metadata["agent_id"]
+		if agentID == "" {
+			agentID = session.ID
+		}
+		for _, step := range plan.Steps {
+			currentDomain := ""
+			if session.Plan != nil && len(session.Results) > 0 {
+				last := session.Results[len(session.Results)-1]
+				if last.Result != nil && last.Result.PageState != nil {
+					currentDomain = last.Result.PageState.URL
+				}
+			}
+			decision := m.policyEngine.Evaluate(ctx, agentID, step.Action, currentDomain)
+			switch decision.Result {
+			case domain.PolicyBlock:
+				m.markFailed(id)
+				return nil, fmt.Errorf("policy_blocked: %s", decision.Reason)
+			case domain.PolicyEscalate:
+				m.markFailed(id)
+				return nil, fmt.Errorf("escalation_required: %s", decision.Reason)
+			}
+		}
+	}
 
 	result, err := m.sequencer.Run(ctx, inst, plan)
 	if err != nil {

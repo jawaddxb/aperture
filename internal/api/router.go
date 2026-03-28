@@ -45,6 +45,9 @@ type RouterConfig struct {
 	// HITLManager, when set, enables HITL intervention endpoints.
 	HITLManager domain.HITLManager
 
+	// PolicyEngine, when set, enables xBPP policy CRUD endpoints.
+	PolicyEngine domain.PolicyEngine
+
 	// Auth configures API key authentication. Empty Keys = dev mode (no auth).
 	Auth AuthConfig
 
@@ -121,6 +124,13 @@ func registerV1Routes(r chi.Router, cfg RouterConfig) {
 			hh := NewHITLHandlers(cfg.HITLManager)
 			r.Post("/hitl/{id}/resolve", hh.Resolve)
 			r.Delete("/hitl/{id}", hh.Cancel)
+		}
+
+		if cfg.PolicyEngine != nil {
+			ph := NewPolicyHandlers(cfg.PolicyEngine)
+			r.Get("/policies/{agent_id}", ph.Get)
+			r.Put("/policies/{agent_id}", ph.Upsert)
+			r.Delete("/policies/{agent_id}", ph.Delete)
 		}
 
 		RegisterBridgeRoutes(r, BridgeConfig{
