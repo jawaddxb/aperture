@@ -80,6 +80,15 @@ type BridgeConfig struct {
 	TaskTimeoutSeconds int `mapstructure:"task_timeout_seconds"`
 }
 
+// UTLSConfig holds uTLS proxy settings.
+type UTLSConfig struct {
+	// Enabled activates the uTLS CONNECT proxy for outbound TLS connections.
+	Enabled bool `mapstructure:"enabled"`
+	// Fingerprint selects the ClientHello profile (e.g. "chrome_120", "firefox_121").
+	// Defaults to "chrome_120" when empty.
+	Fingerprint string `mapstructure:"fingerprint"`
+}
+
 // StealthYAML holds YAML-mapped stealth settings.
 type StealthYAML struct {
 	Enabled        bool    `mapstructure:"enabled"`
@@ -96,6 +105,8 @@ type StealthYAML struct {
 	// SwiftShader produces identical WebGL output across all instances, making
 	// fingerprint-based tracking impossible. This replaces canvas noise injection.
 	WebGL string `mapstructure:"webgl"`
+	// UTLS holds uTLS proxy configuration.
+	UTLS UTLSConfig `mapstructure:"utls"`
 }
 
 // Config is the root application configuration struct.

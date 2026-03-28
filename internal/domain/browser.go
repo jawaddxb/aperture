@@ -149,6 +149,10 @@ type StealthConfig struct {
 	// "noise": random per-session canvas noise (legacy, ML-detectable).
 	// "native": no modification (use real GPU, unique fingerprint).
 	WebGL string
+	// uTLS proxy fields (set at runtime after proxy starts).
+	UTLSEnabled     bool
+	UTLSFingerprint string
+	UTLSProxyAddr   string // Set at runtime after proxy starts; empty means no uTLS proxy.
 }
 
 // Profile represents an isolated browser user data directory.

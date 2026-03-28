@@ -18,6 +18,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/bridge"
 	browserpool "github.com/ApertureHQ/aperture/internal/browser"
 	"github.com/ApertureHQ/aperture/internal/config"
+	"github.com/ApertureHQ/aperture/internal/stealth"
 	"github.com/ApertureHQ/aperture/internal/credentials"
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/ApertureHQ/aperture/internal/executor"
@@ -41,10 +42,31 @@ func main() {
 		os.Exit(1)
 	}
 
+	stealthCfg := mapStealthConfig(cfg)
+
+	// Start uTLS proxy before the browser pool so the pool gets the proxy address.
+	if cfg.Stealth.UTLS.Enabled {
+		fp := cfg.Stealth.UTLS.Fingerprint
+		if fp == "" {
+			fp = stealth.DefaultFingerprint
+		}
+		proxy, proxyErr := stealth.NewProxy(fp)
+		if proxyErr != nil {
+			slog.Error("failed to start utls proxy", "error", proxyErr)
+			os.Exit(1)
+		}
+		proxy.Start(context.Background())
+		stealthCfg.UTLSProxyAddr = proxy.Addr()
+		stealthCfg.UTLSEnabled = true
+		stealthCfg.UTLSFingerprint = fp
+		slog.Info("utls proxy started", "addr", proxy.Addr(), "fingerprint", fp)
+		defer proxy.Close()
+	}
+
 	pool, err := browserpool.NewPool(browserpool.Config{
 		PoolSize:     cfg.Browser.PoolSize,
 		ChromiumPath: cfg.Browser.ChromiumPath,
-		Stealth:      mapStealthConfig(cfg),
+		Stealth:      stealthCfg,
 	})
 	if err != nil {
 		slog.Error("failed to create browser pool", "error", err)
@@ -278,6 +300,7 @@ func buildAuthConfig(cfg *config.Config) api.AuthConfig {
 }
 
 // mapStealthConfig converts YAML stealth settings to domain.StealthConfig.
+// UTLSProxyAddr is NOT set here — it is populated at runtime after the proxy starts.
 func mapStealthConfig(cfg *config.Config) domain.StealthConfig {
 	s := cfg.Stealth
 	webgl := s.WebGL
@@ -291,16 +314,23 @@ func mapStealthConfig(cfg *config.Config) domain.StealthConfig {
 	if webgl == "swiftshader" {
 		canvasNoise = false
 	}
+	fp := s.UTLS.Fingerprint
+	if fp == "" {
+		fp = "chrome_120"
+	}
 	return domain.StealthConfig{
-		Enabled:       s.Enabled,
-		HideWebDriver: s.HideWebDriver,
-		CanvasNoise:   canvasNoise,
-		BlockWebRTC:   s.BlockWebRTC,
-		RandomView:    s.RandomViewport,
-		MockPlugins:   s.MockPlugins,
-		Timezone:      s.Timezone,
-		GeoLatitude:   s.GeoLatitude,
-		GeoLongitude:  s.GeoLongitude,
-		WebGL:         webgl,
+		Enabled:         s.Enabled,
+		HideWebDriver:   s.HideWebDriver,
+		CanvasNoise:     canvasNoise,
+		BlockWebRTC:     s.BlockWebRTC,
+		RandomView:      s.RandomViewport,
+		MockPlugins:     s.MockPlugins,
+		Timezone:        s.Timezone,
+		GeoLatitude:     s.GeoLatitude,
+		GeoLongitude:    s.GeoLongitude,
+		WebGL:           webgl,
+		UTLSEnabled:     s.UTLS.Enabled,
+		UTLSFingerprint: fp,
+		// UTLSProxyAddr is set later in main() after the proxy starts.
 	}
 }

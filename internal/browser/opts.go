@@ -55,6 +55,8 @@ func DefaultLaunchFlags(webglMode string) []chromedp.ExecAllocatorOption {
 
 // BuildAllocatorOptions assembles the full set of ExecAllocatorOptions for a
 // Chromium instance, merging defaults with any caller-supplied overrides.
+// If stealth.UTLSProxyAddr is set, a proxy server flag is added so Chromium
+// routes HTTPS CONNECT tunnels through the uTLS proxy.
 func BuildAllocatorOptions(chromiumPath string, stealth domain.StealthConfig, extra ...chromedp.ExecAllocatorOption) []chromedp.ExecAllocatorOption {
 	webgl := stealth.WebGL
 	if webgl == "" {
@@ -64,6 +66,9 @@ func BuildAllocatorOptions(chromiumPath string, stealth domain.StealthConfig, ex
 		chromedp.ExecPath(chromiumPath),
 	}
 	opts = append(opts, DefaultLaunchFlags(webgl)...)
+	if stealth.UTLSProxyAddr != "" {
+		opts = append(opts, chromedp.ProxyServer(stealth.UTLSProxyAddr))
+	}
 	opts = append(opts, extra...)
 	return opts
 }
