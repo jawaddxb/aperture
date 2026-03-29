@@ -45,6 +45,14 @@ stealth:
   timezone: ""                          # e.g., "America/New_York"
   geo_latitude: 0
   geo_longitude: 0
+  utls:
+    enabled: false                      # Set true to route Chromium through uTLS proxy
+    fingerprint: "chrome_120"           # Options: chrome_120, chrome_auto, firefox_auto
+    mode: "relay"                       # "relay" = transparent TCP tunnel (default, safe)
+                                        # "mitm"  = real TLS fingerprint spoofing via uTLS
+                                        #           Requires APERTURE_STEALTH_UTLS_MODE=mitm
+                                        #           Proof: navigate tls.peet.ws/api/all and
+                                        #           verify JA4 != headless Chrome default
 
 log:
   level: "info"                         # debug, info, warn, error

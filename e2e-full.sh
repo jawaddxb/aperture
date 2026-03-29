@@ -455,6 +455,50 @@ if [ "$KEY" != "null" ] && [ -n "$KEY" ]; then
 fi
 
 # ═══════════════════════════════════════════════════════
+# N. STEALTH — uTLS fingerprint (conditional: requires MITM mode)
+# ═══════════════════════════════════════════════════════
+log "N. STEALTH (uTLS fingerprint verification)"
+
+# N1. TLS fingerprint check — only meaningful when APERTURE_STEALTH_UTLS_MODE=mitm
+# Navigates tls.peet.ws/api/all and checks the JA4 fingerprint in the snapshot.
+# SKIP if server is in relay mode (default) — this is expected for Railway/prod.
+# To verify MITM locally: APERTURE_STEALTH_UTLS_MODE=mitm ./aperture-server
+STEALTH_MODE="${APERTURE_STEALTH_UTLS_MODE:-relay}"
+if [ "$STEALTH_MODE" = "mitm" ]; then
+  R=$(curl -s -m 10 -X POST "$BASE/sessions" -H "Content-Type: application/json" \
+    ${KEY:+-H "Authorization: Bearer $KEY"} \
+    -d '{"goal": "navigate to https://tls.peet.ws/api/all"}')
+  SID_TLS=$(echo "$R" | jq -r '.session_id // "null"')
+  if [ "$SID_TLS" != "null" ]; then
+    curl -s -m 30 -X POST "$BASE/sessions/$SID_TLS/execute" \
+      ${KEY:+-H "Authorization: Bearer $KEY"} > /dev/null
+    SNAP_TLS=$(curl -s "$BASE/sessions/$SID_TLS/snapshot" \
+      ${KEY:+-H "Authorization: Bearer $KEY"})
+    JA4=$(echo "$SNAP_TLS" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+text = d.get('text', '') + d.get('body', '')
+import re
+m = re.search(r'\"ja4\":\s*\"([^\"]+)\"', text)
+print(m.group(1) if m else 'NOT_FOUND')
+" 2>/dev/null || echo "PARSE_ERROR")
+    # Headless Chrome JA4 starts with t13d191000 — spoofed should differ
+    if [[ "$JA4" == "NOT_FOUND" || "$JA4" == "PARSE_ERROR" ]]; then
+      result "Stealth: JA4 fingerprint" "FAIL" "Could not extract JA4 from tls.peet.ws"
+    elif [[ "$JA4" == t13d191000* ]]; then
+      result "Stealth: JA4 fingerprint" "FAIL" "JA4=$JA4 (headless Chrome — MITM not working)"
+    else
+      result "Stealth: JA4 fingerprint" "PASS" "JA4=$JA4 (spoofed, not headless)"
+    fi
+    curl -s -X DELETE "$BASE/sessions/$SID_TLS" ${KEY:+-H "Authorization: Bearer $KEY"} > /dev/null
+  else
+    result "Stealth: JA4 fingerprint" "FAIL" "Could not create session: ${R:0:100}"
+  fi
+else
+  result "Stealth: JA4 fingerprint" "SKIP" "APERTURE_STEALTH_UTLS_MODE=relay (set to 'mitm' to verify JA4 spoofing)"
+fi
+
+# ═══════════════════════════════════════════════════════
 # SUMMARY
 # ═══════════════════════════════════════════════════════
 echo "" | tee -a "$LOG_FILE"
