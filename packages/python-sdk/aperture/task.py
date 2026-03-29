@@ -1,9 +1,9 @@
-"""Task planner with SSE streaming support."""
+"""Task planner with SSE streaming support (sync + async)."""
 
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator
 
 from aperture.types import TaskEvent
 
@@ -87,4 +87,102 @@ class TaskPlanner:
     @property
     def events(self) -> list[TaskEvent]:
         """Alias for execute()."""
+        return self.execute()
+
+
+class AsyncTaskPlanner:
+    """Async version of TaskPlanner using httpx async streaming.
+
+    Requires ``httpx-sse`` for server-sent event parsing::
+
+        pip install "aperture-sdk[sse]"
+
+    Usage::
+
+        async for event in client.async_task("Get HN #1 story title"):
+            print(event.event, event.data)
+
+        # Or collect all at once:
+        events = await client.async_task("...").execute()
+    """
+
+    def __init__(
+        self,
+        client: ApertureClient,
+        goal: str,
+        mode: str | None = None,
+        checkpoint_id: str | None = None,
+    ):
+        self._client = client
+        self._goal = goal
+        self._mode = mode
+        self._checkpoint_id = checkpoint_id
+
+    async def _stream(self) -> AsyncIterator[TaskEvent]:
+        """Core async SSE streaming implementation."""
+        payload: dict[str, Any] = {"goal": self._goal}
+        if self._mode:
+            payload["mode"] = self._mode
+
+        endpoint = "/tasks/execute"
+        if self._checkpoint_id:
+            endpoint = "/tasks/resume"
+            payload["checkpoint_id"] = self._checkpoint_id
+
+        # Use httpx-sse if available, fall back to manual SSE parsing
+        try:
+            from httpx_sse import aconnect_sse
+
+            async with aconnect_sse(
+                self._client._async, "POST", endpoint, json=payload
+            ) as event_source:
+                async for sse in event_source.aiter_sse():
+                    try:
+                        data = json.loads(sse.data) if sse.data else {}
+                    except json.JSONDecodeError:
+                        data = {"raw": sse.data}
+                    yield TaskEvent(event=sse.event or "message", data=data)
+
+        except ImportError:
+            # Fallback: manual SSE parsing over async httpx stream
+            async with self._client._async.stream("POST", endpoint, json=payload) as response:
+                if response.status_code >= 400:
+                    body = await response.aread()
+                    from aperture.errors import raise_for_status
+                    raise_for_status(response.status_code, json.loads(body) if body else {})
+
+                buffer = ""
+                current_event = "message"
+                current_data = ""
+
+                async for chunk in response.aiter_text():
+                    buffer += chunk
+                    while "\n" in buffer:
+                        line, buffer = buffer.split("\n", 1)
+                        line = line.rstrip("\r")
+
+                        if line.startswith("event:"):
+                            current_event = line[6:].strip()
+                        elif line.startswith("data:"):
+                            current_data += line[5:].strip()
+                        elif line == "":
+                            if current_data:
+                                try:
+                                    data = json.loads(current_data)
+                                except json.JSONDecodeError:
+                                    data = {"raw": current_data}
+                                yield TaskEvent(event=current_event, data=data)
+                            current_event = "message"
+                            current_data = ""
+
+    def __aiter__(self) -> AsyncIterator[TaskEvent]:
+        return self._stream()
+
+    async def execute(self) -> list[TaskEvent]:
+        """Collect all SSE events into a list (non-streaming)."""
+        return [event async for event in self._stream()]
+
+    @property
+    def aevents(self) -> Any:
+        """Alias: awaitable that returns list[TaskEvent]."""
         return self.execute()

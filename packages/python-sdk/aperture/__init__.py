@@ -2,7 +2,7 @@
 
 from aperture.client import ApertureClient
 from aperture.session import ApertureSession
-from aperture.task import TaskPlanner
+from aperture.task import AsyncTaskPlanner, TaskPlanner
 from aperture.errors import (
     ApertureError,
     AuthenticationError,
@@ -17,6 +17,7 @@ __all__ = [
     "ApertureClient",
     "ApertureSession",
     "TaskPlanner",
+    "AsyncTaskPlanner",
     "ApertureError",
     "AuthenticationError",
     "RateLimitError",

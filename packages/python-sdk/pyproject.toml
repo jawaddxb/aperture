@@ -40,3 +40,9 @@ dev = [
 Homepage = "https://github.com/jawaddxb/aperture"
 Documentation = "https://github.com/jawaddxb/aperture/tree/main/packages/python-sdk"
 Repository = "https://github.com/jawaddxb/aperture"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aperture"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

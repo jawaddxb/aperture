@@ -8,7 +8,7 @@ import httpx
 
 from aperture.errors import raise_for_status
 from aperture.session import ApertureSession
-from aperture.task import TaskPlanner
+from aperture.task import AsyncTaskPlanner, TaskPlanner
 from aperture.types import (
     AccountInfo,
     Credential,
@@ -158,7 +158,7 @@ class ApertureClient:
     # ── Task Planner ─────────────────────────────────────────────────────
 
     def task(self, goal: str, **kwargs: Any) -> TaskPlanner:
-        """Create a task planner that streams SSE events.
+        """Create a task planner that streams SSE events (sync).
 
         Usage::
 
@@ -166,6 +166,19 @@ class ApertureClient:
                 print(event.event, event.data)
         """
         return TaskPlanner(self, goal, **kwargs)
+
+    def async_task(self, goal: str, **kwargs: Any) -> AsyncTaskPlanner:
+        """Create an async task planner that streams SSE events.
+
+        Usage::
+
+            async for event in client.async_task("Get HN #1 story"):
+                print(event.event, event.data)
+
+            # Or collect all events:
+            events = await client.async_task("...").execute()
+        """
+        return AsyncTaskPlanner(self, goal, **kwargs)
 
     # ── xBPP Policies ────────────────────────────────────────────────────
 
