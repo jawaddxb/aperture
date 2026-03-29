@@ -23,6 +23,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/domain"
 	"github.com/ApertureHQ/aperture/internal/executor"
 	"github.com/ApertureHQ/aperture/internal/llm"
+	"github.com/ApertureHQ/aperture/internal/captcha"
 	"github.com/ApertureHQ/aperture/internal/memory"
 	"github.com/ApertureHQ/aperture/internal/observe"
 	"github.com/ApertureHQ/aperture/internal/store"
@@ -182,6 +183,32 @@ func main() {
 	// Progress emitter for WebSocket streaming.
 	emitter := stream.NewChannelEmitter()
 
+	// CAPTCHA solving: chain solver (CapSolver → 2Captcha → HITL fallback).
+	// Only enabled when captcha.enabled=true and at least one API key is configured.
+	var captchaSolver domain.CaptchaSolver
+	captchaDetector := captcha.NewDetector()
+	captchaInjector := captcha.NewInjector()
+	if cfg.Captcha.Enabled {
+		var solvers []domain.CaptchaSolver
+		if cfg.Captcha.Primary == "capsolver" && cfg.Captcha.CapSolverAPIKey != "" {
+			solvers = append(solvers, captcha.NewCapSolverClient(cfg.Captcha.CapSolverAPIKey))
+			slog.Info("captcha: CapSolver enabled")
+		}
+		if cfg.Captcha.Fallback == "2captcha" && cfg.Captcha.TwoCaptchaAPIKey != "" {
+			solvers = append(solvers, captcha.NewTwoCaptchaClient(cfg.Captcha.TwoCaptchaAPIKey))
+			slog.Info("captcha: 2Captcha fallback enabled")
+		}
+		if len(solvers) > 0 || cfg.Captcha.Fallback == "hitl" {
+			captchaSolver = captcha.NewChainSolver(solvers, hitlMgr)
+			slog.Info("captcha solver chain enabled",
+				"primary", cfg.Captcha.Primary,
+				"fallback", cfg.Captcha.Fallback,
+			)
+		} else {
+			slog.Warn("captcha.enabled=true but no API keys configured — CAPTCHA detection will log warnings only")
+		}
+	}
+
 	sessionMgr := session.NewDefaultSessionManager(session.Config{
 		Pool:            pool,
 		Planner:         p,
@@ -190,6 +217,9 @@ func main() {
 		PolicyEngine:    policyEngine,
 		Billing:         accountService,
 		MaxPerAccount:   cfg.API.MaxSessionsPerAccount,
+		CaptchaSolver:   captchaSolver,
+		CaptchaDetector: captchaDetector,
+		CaptchaInjector: captchaInjector,
 	})
 
 	screenshotSrv := browserpool.NewScreenshotService(pool)

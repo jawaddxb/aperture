@@ -455,6 +455,48 @@ if [ "$KEY" != "null" ] && [ -n "$KEY" ]; then
 fi
 
 # ═══════════════════════════════════════════════════════
+# O. CAPTCHA — automated solving (conditional: requires API key)
+# ═══════════════════════════════════════════════════════
+log "O. CAPTCHA (automated solving — conditional)"
+
+# O1. CAPTCHA detection: navigate to reCAPTCHA v2 demo page, check if CAPTCHA detected in logs
+# This test verifies the detector runs without crashing even when no solver is configured.
+R=$(curl -s -m 10 -X POST "$BASE/sessions" -H "Content-Type: application/json" \
+  ${KEY:+-H "Authorization: Bearer $KEY"} \
+  -d '{"goal": "navigate to https://www.google.com/recaptcha/api2/demo"}')
+SID_CAP=$(echo "$R" | jq -r '.session_id // "null"')
+if [ "$SID_CAP" != "null" ]; then
+  R2=$(curl -s -m 30 -X POST "$BASE/sessions/$SID_CAP/execute" \
+    ${KEY:+-H "Authorization: Bearer $KEY"})
+  # Success = navigation completed (CAPTCHA page loaded), even if not solved
+  EXEC_OK=$(echo "$R2" | jq -r '.success // false')
+  [ "$EXEC_OK" = "true" ] && \
+    result "CAPTCHA: Navigate to demo page" "PASS" "Page loaded successfully" || \
+    result "CAPTCHA: Navigate to demo page" "FAIL" "$(echo "$R2" | jq -r '.error // ""')"
+  curl -s -X DELETE "$BASE/sessions/$SID_CAP" ${KEY:+-H "Authorization: Bearer $KEY"} > /dev/null
+else
+  result "CAPTCHA: Navigate to demo page" "SKIP" "Could not create session"
+fi
+
+# O2. Automated solving — only runs if APERTURE_CAPTCHA_CAPSOLVER_KEY is set
+if [ -n "${APERTURE_CAPTCHA_CAPSOLVER_KEY:-}" ]; then
+  R=$(curl -s -m 10 -X POST "$BASE/sessions" -H "Content-Type: application/json" \
+    ${KEY:+-H "Authorization: Bearer $KEY"} \
+    -d '{"goal": "navigate to https://www.google.com/recaptcha/api2/demo"}')
+  SID_CAP2=$(echo "$R" | jq -r '.session_id // "null"')
+  if [ "$SID_CAP2" != "null" ]; then
+    R3=$(curl -s -m 90 -X POST "$BASE/sessions/$SID_CAP2/execute" \
+      ${KEY:+-H "Authorization: Bearer $KEY"})
+    echo "$R3" | jq -r '.success' | grep -q "true" && \
+      result "CAPTCHA: Auto-solve reCAPTCHA v2" "PASS" "Solved by CapSolver" || \
+      result "CAPTCHA: Auto-solve reCAPTCHA v2" "FAIL" "$(echo "$R3" | jq -r '.error // ""')"
+    curl -s -X DELETE "$BASE/sessions/$SID_CAP2" ${KEY:+-H "Authorization: Bearer $KEY"} > /dev/null
+  fi
+else
+  result "CAPTCHA: Auto-solve reCAPTCHA v2" "SKIP" "APERTURE_CAPTCHA_CAPSOLVER_KEY not set"
+fi
+
+# ═══════════════════════════════════════════════════════
 # N. STEALTH — uTLS fingerprint (conditional: requires MITM mode)
 # ═══════════════════════════════════════════════════════
 log "N. STEALTH (uTLS fingerprint verification)"

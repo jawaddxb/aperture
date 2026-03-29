@@ -41,6 +41,19 @@ type Config struct {
 	// Optional.
 	Billing *billing.AccountService
 
+	// CaptchaSolver, when set, enables automatic CAPTCHA solving after navigations.
+	// Requires CaptchaDetector and CaptchaInjector to also be set.
+	// Optional.
+	CaptchaSolver domain.CaptchaSolver
+
+	// CaptchaDetector detects CAPTCHAs on the current page.
+	// Required when CaptchaSolver is set.
+	CaptchaDetector domain.CaptchaDetector
+
+	// CaptchaInjector injects CAPTCHA solutions into the page.
+	// Required when CaptchaSolver is set.
+	CaptchaInjector domain.CaptchaInjector
+
 	// MaxConcurrent is the maximum number of active sessions allowed at once.
 	// Defaults to 5 when zero.
 	MaxConcurrent int
@@ -53,14 +66,17 @@ type Config struct {
 // DefaultSessionManager manages browser sessions in memory.
 // Implements domain.SessionManager. Safe for concurrent use.
 type DefaultSessionManager struct {
-	pool          domain.BrowserPool
-	planner       domain.Planner
-	sequencer     domain.Sequencer
-	authPersist   domain.AuthPersistence
-	policyEngine  domain.PolicyEngine
-	billing       *billing.AccountService
-	maxConcurrent int
-	maxPerAccount int
+	pool            domain.BrowserPool
+	planner         domain.Planner
+	sequencer       domain.Sequencer
+	authPersist     domain.AuthPersistence
+	policyEngine    domain.PolicyEngine
+	billing         *billing.AccountService
+	captchaSolver   domain.CaptchaSolver
+	captchaDetector domain.CaptchaDetector
+	captchaInjector domain.CaptchaInjector
+	maxConcurrent   int
+	maxPerAccount   int
 
 	mu       sync.RWMutex
 	sessions map[string]*domain.Session
@@ -84,16 +100,19 @@ func NewDefaultSessionManager(cfg Config) *DefaultSessionManager {
 		max = 5
 	}
 	return &DefaultSessionManager{
-		pool:          cfg.Pool,
-		planner:       cfg.Planner,
-		sequencer:     cfg.Sequencer,
-		authPersist:   cfg.AuthPersistence,
-		policyEngine:  cfg.PolicyEngine,
-		billing:       cfg.Billing,
-		maxConcurrent: max,
-		maxPerAccount: cfg.MaxPerAccount,
-		sessions:      make(map[string]*domain.Session),
-		browsers:      make(map[string]domain.BrowserInstance),
+		pool:            cfg.Pool,
+		planner:         cfg.Planner,
+		sequencer:       cfg.Sequencer,
+		authPersist:     cfg.AuthPersistence,
+		policyEngine:    cfg.PolicyEngine,
+		billing:         cfg.Billing,
+		captchaSolver:   cfg.CaptchaSolver,
+		captchaDetector: cfg.CaptchaDetector,
+		captchaInjector: cfg.CaptchaInjector,
+		maxConcurrent:   max,
+		maxPerAccount:   cfg.MaxPerAccount,
+		sessions:        make(map[string]*domain.Session),
+		browsers:        make(map[string]domain.BrowserInstance),
 	}
 }
 
@@ -268,6 +287,23 @@ func (m *DefaultSessionManager) Execute(ctx context.Context, id string) (*domain
 	if err != nil {
 		m.markFailed(id)
 		return nil, fmt.Errorf("execute: %w", err)
+	}
+
+	// CAPTCHA resolution: after execution, check if the final page has a CAPTCHA.
+	// If detected and a solver is configured, solve + inject and note in metadata.
+	if m.captchaSolver != nil && m.captchaDetector != nil && m.captchaInjector != nil {
+		if challenge, detectErr := m.captchaDetector.Detect(ctx, inst); detectErr == nil && challenge != nil {
+			slog.Info("captcha detected after execution", "type", challenge.Type, "page", challenge.PageURL)
+			if sol, solveErr := m.captchaSolver.Solve(ctx, *challenge); solveErr == nil {
+				if injectErr := m.captchaInjector.Inject(ctx, inst, sol); injectErr == nil {
+					slog.Info("captcha solved and injected", "solver", sol.SolvedBy, "type", challenge.Type)
+				} else {
+					slog.Warn("captcha inject failed", "error", injectErr)
+				}
+			} else {
+				slog.Warn("captcha solve failed", "error", solveErr, "type", challenge.Type)
+			}
+		}
 	}
 
 	// Assign per-step costs and compute total.
