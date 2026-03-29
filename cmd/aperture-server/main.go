@@ -180,6 +180,13 @@ func main() {
 		slog.Info("agent state KV store: in-memory (no persistent store)")
 	}
 
+	// Session recovery: any session marked "active" in the DB was interrupted by
+	// a prior unclean shutdown. Mark them "interrupted" so callers can detect and
+	// retry them rather than seeing stale "active" entries.
+	if persistStore != nil {
+		recoverInterruptedSessions(persistStore)
+	}
+
 	// Progress emitter for WebSocket streaming.
 	emitter := stream.NewChannelEmitter()
 
@@ -427,5 +434,38 @@ func mapStealthConfig(cfg *config.Config) domain.StealthConfig {
 		UTLSEnabled:     s.UTLS.Enabled,
 		UTLSFingerprint: fp,
 		// UTLSProxyAddr is set later in main() after the proxy starts.
+	}
+}
+
+// recoverInterruptedSessions marks any session that was "active" in the persistent
+// store as "interrupted". These sessions were executing when the previous server
+// process died (crash, OOM, SIGKILL) and their browser instances no longer exist.
+// Callers can detect "interrupted" status and retry or surface the error to the user.
+func recoverInterruptedSessions(s *store.SQLiteStore) {
+	ctx := context.Background()
+	sessions, err := s.ListSessions(ctx, "") // "" = all accounts
+	if err != nil {
+		slog.Warn("session recovery: could not list sessions", "error", err)
+		return
+	}
+	recovered := 0
+	for _, rec := range sessions {
+		if rec.Status == "active" {
+			if err := s.UpdateSessionStatus(ctx, rec.ID, "interrupted"); err != nil {
+				slog.Warn("session recovery: failed to mark session interrupted",
+					"session_id", rec.ID, "error", err)
+			} else {
+				recovered++
+				slog.Info("session recovery: marked interrupted", "session_id", rec.ID, "goal", rec.Goal)
+			}
+		}
+	}
+	if recovered > 0 {
+		slog.Warn("session recovery: interrupted sessions detected on startup",
+			"count", recovered,
+			"reason", "server restarted while sessions were active",
+		)
+	} else {
+		slog.Info("session recovery: no interrupted sessions")
 	}
 }
