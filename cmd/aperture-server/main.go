@@ -25,6 +25,7 @@ import (
 	"github.com/ApertureHQ/aperture/internal/llm"
 	"github.com/ApertureHQ/aperture/internal/memory"
 	"github.com/ApertureHQ/aperture/internal/observe"
+	"github.com/ApertureHQ/aperture/internal/store"
 	"github.com/ApertureHQ/aperture/internal/planner"
 	"github.com/ApertureHQ/aperture/internal/policy"
 	"github.com/ApertureHQ/aperture/internal/profiles"
@@ -91,9 +92,10 @@ func main() {
 
 	slog.Info("browser pool ready", "size", pool.Size(), "available", pool.Available())
 
-	// xBPP Policy Engine: gates every agent action against configurable rules.
-	policyEngine := policy.NewInMemoryPolicyEngine()
-	slog.Info("xBPP policy engine enabled")
+	// xBPP Policy Engine: starts in-memory, upgraded to persistent after store init.
+	// Replaced below once persistStore is available.
+	var policyEngine domain.PolicyEngine = policy.NewInMemoryPolicyEngine()
+	slog.Info("xBPP policy engine enabled (in-memory, will upgrade to persistent)")
 
 	// Site profiles: YAML-defined domain intelligence for structured extraction.
 	var profileMgr domain.SiteProfileManager
@@ -141,10 +143,6 @@ func main() {
 	// Metrics collector for action timing and success rates.
 	metrics := observe.NewInMemoryMetrics()
 
-	// Agent state KV store for per-agent memory.
-	agentStateStore := memory.NewInMemoryKV()
-	slog.Info("agent state KV store enabled")
-
 	// Billing: SQLite-backed credit system.
 	billingDB, err := billing.InitDB("aperture.db")
 	if err != nil {
@@ -154,6 +152,32 @@ func main() {
 	defer billingDB.Close()
 	accountService := billing.NewAccountService(billingDB)
 	slog.Info("billing system initialized")
+
+	// Persistent store: SQLite-backed KV, policy, and session metadata.
+	// Uses the same aperture.db file as billing (separate tables, WAL mode).
+	persistStore, persistErr := store.NewSQLiteStore("aperture.db")
+	if persistErr != nil {
+		slog.Warn("persistent store unavailable, falling back to in-memory", "error", persistErr)
+	} else {
+		defer persistStore.Close()
+		// Upgrade policy engine to persistent
+		if pe, err := policy.NewStorePolicyEngine(persistStore); err != nil {
+			slog.Warn("persistent policy engine failed, staying in-memory", "error", err)
+		} else {
+			policyEngine = pe
+			slog.Info("xBPP policy engine upgraded to persistent SQLite")
+		}
+	}
+
+	// Agent state KV store: persistent if store is available, in-memory otherwise.
+	var agentStateStore domain.AgentStateStore
+	if persistStore != nil {
+		agentStateStore = memory.NewStoreBackedKV(persistStore)
+		slog.Info("agent state KV store: persistent SQLite")
+	} else {
+		agentStateStore = memory.NewInMemoryKV()
+		slog.Info("agent state KV store: in-memory (no persistent store)")
+	}
 
 	// Progress emitter for WebSocket streaming.
 	emitter := stream.NewChannelEmitter()
